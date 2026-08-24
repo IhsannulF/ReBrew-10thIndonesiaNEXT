@@ -1,10 +1,10 @@
 import React from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import {
-  RecyclingDashboard,
-  DashboardData,
-} from "@/components/dashboard/RecyclingDashboard";
+import { RecyclingDashboard } from "@/components/dashboard/RecyclingDashboard";
+import { DashboardData, TransactionItem, WasteCategoryKey } from "@/types/dashboard";
+import { initialDashboardData } from "@/lib/mock-dashboard-data";
+import { calculateCO2Savings, coinsToIdr } from "@/lib/dashboard-utils";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -16,60 +16,28 @@ export default async function DashboardPage() {
   const userName =
     user?.user_metadata?.full_name ||
     user?.email?.split("@")[0] ||
-    "Budi";
-  const userEmail = user?.email || "mitra@kopi-selamat.com";
+    initialDashboardData.user.name;
+  const userEmail = user?.email || initialDashboardData.user.email;
   const cafeName =
     user?.user_metadata?.cafe_name ||
     user?.user_metadata?.full_name ||
-    "Kopi Selamat Cafe";
+    initialDashboardData.user.cafeName;
 
-  // Default values
-  let totalCoins = 1250;
-  let wasteKg = 8.4;
-  let co2SavedKg = 4.2;
-  let tier = "Eco Partner ⭐";
-  let transactions = [
-    {
-      id: "RB-001",
-      icon: "water_bottle",
-      material: "Botol Plastik",
-      date: "Hari ini 09:15",
-      weight: "1.2 kg",
-      coins: 18,
-      status: "Terverifikasi",
-    },
-    {
-      id: "RB-002",
-      icon: "package_2",
-      material: "Kardus",
-      date: "Kemarin 14:30",
-      weight: "3.5 kg",
-      coins: 17,
-      status: "Terverifikasi",
-    },
-    {
-      id: "RB-003",
-      icon: "inventory_2",
-      material: "Kaleng",
-      date: "2 hari lalu",
-      weight: "0.8 kg",
-      coins: 8,
-      status: "Terverifikasi",
-    },
-    {
-      id: "RB-004",
-      icon: "water_bottle",
-      material: "Botol Plastik",
-      date: "4 hari lalu",
-      weight: "2.1 kg",
-      coins: 31,
-      status: "Terverifikasi",
-    },
-  ];
+  // Clone fallback base data
+  const dashboardData: DashboardData = JSON.parse(JSON.stringify(initialDashboardData));
+
+  // Override profile info with authenticated user
+  dashboardData.user = {
+    ...dashboardData.user,
+    id: user?.id || dashboardData.user.id,
+    name: userName,
+    email: userEmail,
+    cafeName,
+  };
 
   if (user?.id) {
     try {
-      // 1. Fetch user profile / balance if profiles/users table exists
+      // 1. Fetch user profile / balance if profiles or users table exists
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -77,13 +45,18 @@ export default async function DashboardPage() {
         .maybeSingle();
 
       if (profile) {
-        if (profile.saldo_poin !== undefined && profile.saldo_poin !== null)
-          totalCoins = profile.saldo_poin;
-        if (profile.total_kg !== undefined && profile.total_kg !== null)
-          wasteKg = profile.total_kg;
-        if (profile.co2_saved_kg !== undefined && profile.co2_saved_kg !== null)
-          co2SavedKg = profile.co2_saved_kg;
-        if (profile.tier) tier = profile.tier;
+        if (profile.saldo_poin !== undefined && profile.saldo_poin !== null) {
+          dashboardData.stats.totalCoins = profile.saldo_poin;
+          dashboardData.stats.balanceIdr = coinsToIdr(profile.saldo_poin);
+        }
+        if (profile.total_kg !== undefined && profile.total_kg !== null) {
+          dashboardData.stats.wasteKgThisMonth = profile.total_kg;
+          dashboardData.stats.co2SavedKg = calculateCO2Savings(profile.total_kg);
+          dashboardData.target.currentKg = profile.total_kg;
+        }
+        if (profile.tier) {
+          dashboardData.user.tier = profile.tier;
+        }
       }
 
       // 2. Fetch latest user transactions from DB if table exists
@@ -92,20 +65,31 @@ export default async function DashboardPage() {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(8);
 
       if (dbTransactions && dbTransactions.length > 0) {
-        transactions = dbTransactions.map((tx: any) => {
-          const materialName = tx.material || tx.waste_category || "Botol Plastik";
-          const lowerName = materialName.toLowerCase();
-          let icon = "water_bottle";
-          if (lowerName.includes("kardus") || lowerName.includes("box")) icon = "package_2";
-          else if (lowerName.includes("kaleng") || lowerName.includes("can")) icon = "inventory_2";
-          else if (lowerName.includes("kaca") || lowerName.includes("glass")) icon = "wine_bar";
+        const mappedTransactions: TransactionItem[] = dbTransactions.map((tx: any) => {
+          const rawMaterial = (tx.material || tx.waste_category || "").toLowerCase();
+          let categoryKey: WasteCategoryKey = "botol_plastik";
+          let materialName = tx.material || "Botol Plastik PET";
+
+          if (rawMaterial.includes("cup") && !rawMaterial.includes("tutup")) {
+            categoryKey = "cup_plastik";
+            materialName = "Cup Plastik PP";
+          } else if (rawMaterial.includes("tutup") || rawMaterial.includes("lid")) {
+            categoryKey = "tutup_cup";
+            materialName = "Tutup Cup & Seal";
+          } else if (rawMaterial.includes("kardus") || rawMaterial.includes("box") || rawMaterial.includes("karton")) {
+            categoryKey = "kardus";
+            materialName = "Kardus Kemasan";
+          } else if (rawMaterial.includes("kaleng") || rawMaterial.includes("can")) {
+            categoryKey = "kaleng";
+            materialName = "Kaleng Krimer/Soda";
+          }
 
           return {
-            id: tx.id || `RB-${Math.floor(Math.random() * 1000)}`,
-            icon,
+            id: tx.id || `RB-${Math.floor(100 + Math.random() * 900)}`,
+            categoryKey,
             material: materialName,
             date: tx.created_at
               ? new Date(tx.created_at).toLocaleDateString("id-ID", {
@@ -115,41 +99,20 @@ export default async function DashboardPage() {
                   minute: "2-digit",
                 })
               : "Hari ini",
-            weight: `${tx.weight_kg || tx.weight || 1.0} kg`,
-            coins: tx.points_earned || tx.coins || 15,
-            status: tx.status === "confirmed" ? "Terverifikasi" : tx.status || "Terverifikasi",
+            weightKg: Number(tx.weight_kg || tx.weight || 1.0),
+            coins: Number(tx.points_earned || tx.coins || 10),
+            status: tx.status || "confirmed",
+            method: tx.method === "dijemput" ? "dijemput" : "drop_point",
+            dropPointName: tx.drop_point_name || "ReBrew Hub Gubeng",
           };
         });
+
+        dashboardData.recentTransactions = mappedTransactions;
       }
     } catch {
-      // Fallback handled seamlessly
+      // Gracefully fall back to initialDashboardData
     }
   }
-
-  const dashboardData: DashboardData = {
-    user: {
-      id: user?.id,
-      name: userName,
-      email: userEmail,
-      cafeName,
-      tier,
-    },
-    stats: {
-      totalCoins,
-      balanceIdr: totalCoins * 50,
-      wasteKgThisMonth: wasteKg,
-      targetKgThisMonth: 20,
-      co2SavedKg,
-    },
-    notification: {
-      id: "RB-A1B2C3",
-      message: "Transaksi RB-A1B2C3 Terverifikasi!",
-      detail:
-        "Timbangan IoT mencatat 1.2 kg Botol Plastik · +18 koin sudah masuk ke saldomu",
-      coinsEarned: 18,
-    },
-    recentTransactions: transactions,
-  };
 
   return <RecyclingDashboard data={dashboardData} />;
 }

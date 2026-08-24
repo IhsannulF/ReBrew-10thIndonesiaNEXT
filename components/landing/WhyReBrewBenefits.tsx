@@ -6,21 +6,37 @@ const benefits = [
     icon: "visibility",
     title: "Transparan",
     description: "Proses penimbangan jelas, riwayat terlacak, dan terverifikasi secara terbuka.",
+    bgGradient: "bg-gradient-to-br from-white via-white to-[#f0fdf4]",
+    borderColor: "border-[#bbf7d0] hover:border-[#2e7d32]",
+    iconBg: "bg-[#e8f5e9] text-[#2e7d32]",
+    hoverIconBg: "group-hover:bg-[#2e7d32]",
   },
   {
     icon: "eco",
     title: "Berkelanjutan",
     description: "Mendukung ekosistem sirkular ekonomi dan kelestarian bumi Indonesia.",
+    bgGradient: "bg-gradient-to-br from-white via-white to-[#f0f9ff]",
+    borderColor: "border-[#bae6fd] hover:border-[#0284c7]",
+    iconBg: "bg-[#e0f2fe] text-[#0284c7]",
+    hoverIconBg: "group-hover:bg-[#0284c7]",
   },
   {
     icon: "payments",
     title: "Bermanfaat",
     description: "Setiap kilogram sampah terpilah langsung menghasilkan reward uang nyata.",
+    bgGradient: "bg-gradient-to-br from-white via-white to-[#fffdf5]",
+    borderColor: "border-[#fde68a] hover:border-[#d97706]",
+    iconBg: "bg-[#fef3c7] text-[#d97706]",
+    hoverIconBg: "group-hover:bg-[#d97706]",
   },
   {
     icon: "handshake",
     title: "Bersama",
     description: "Membangun sinergi komunitas, mitra UMKM, dan masyarakat berdaya.",
+    bgGradient: "bg-gradient-to-br from-white via-white to-[#faf8ff]",
+    borderColor: "border-[#ddd6fe] hover:border-[#7c3aed]",
+    iconBg: "bg-[#ede9fe] text-[#7c3aed]",
+    hoverIconBg: "group-hover:bg-[#7c3aed]",
   },
 ];
 
@@ -28,7 +44,7 @@ export const WhyReBrewBenefits = (): React.JSX.Element => {
   return (
     <section
       id="keunggulan"
-      className="w-full bg-[#f5f4ef] px-4 py-16 sm:px-8 sm:py-20 lg:px-12"
+      className="w-full bg-[#f9faf8] px-4 py-16 sm:px-8 sm:py-20 lg:px-12 border-t border-[#e5ebe5]"
       aria-labelledby="why-rebrew-heading"
     >
       <div className="mx-auto max-w-7xl">
@@ -41,7 +57,7 @@ export const WhyReBrewBenefits = (): React.JSX.Element => {
           >
             Kenapa ReBrew?
           </h2>
-          <p className="mt-3 max-w-2xl text-base text-[#6b7c6f] sm:text-lg">
+          <p className="mt-3 max-w-2xl text-base text-[#6b7c6f] sm:text-lg leading-relaxed">
             Platform pilah sampah pertama di Indonesia dengan reward uang nyata dan ekosistem terintegrasi.
           </p>
         </div>
@@ -51,20 +67,22 @@ export const WhyReBrewBenefits = (): React.JSX.Element => {
           {benefits.map((benefit) => (
             <div
               key={benefit.title}
-              className="group flex flex-col items-center rounded-2xl border border-[#d8e6d9] bg-white p-7 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[#66bb6a]"
+              className={`group flex flex-col items-center rounded-2xl border ${benefit.borderColor} ${benefit.bgGradient} p-8 text-center shadow-xs transition-all duration-200 hover:-translate-y-1.5 hover:shadow-md`}
             >
               {/* Icon Container */}
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e8f5e9] text-[#2e7d32] transition-colors group-hover:bg-[#2e7d32] group-hover:text-white">
+              <div
+                className={`flex h-16 w-16 items-center justify-center rounded-2xl ${benefit.iconBg} ${benefit.hoverIconBg} group-hover:text-white transition-all shadow-xs`}
+              >
                 <GoogleIcon name={benefit.icon} size={32} filled />
               </div>
 
               {/* Title */}
-              <h3 className="mt-5 text-lg font-bold text-[#1a2a1b]">
+              <h3 className="mt-6 text-xl font-bold text-[#1a2a1b]">
                 {benefit.title}
               </h3>
 
               {/* Description */}
-              <p className="mt-2 text-sm leading-relaxed text-[#6b7c6f]">
+              <p className="mt-3 text-sm leading-relaxed text-[#556957]">
                 {benefit.description}
               </p>
             </div>

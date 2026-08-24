@@ -1,14 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a2a1b;
+  /* DESIGN.md Tokens */
+  --surface: #f8f9ff;
+  --surface-dim: #cbdbf5;
+  --surface-bright: #f8f9ff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #eff4ff;
+  --surface-container: #e5eeff;
+  --surface-container-high: #dce9ff;
+  --surface-container-highest: #d3e4fe;
+  --on-surface: #0b1c30;
+  --on-surface-variant: #3c4a42;
+  --inverse-surface: #213145;
+  --inverse-on-surface: #eaf1ff;
+  --outline: #6c7a71;
+  --outline-variant: #bbcabf;
+  --surface-tint: #006c49;
+  --primary: #006c49;
+  --on-primary: #ffffff;
+  --primary-container: #10b981;
+  --on-primary-container: #00422b;
+  --inverse-primary: #4edea3;
+  --secondary: #2b6954;
+  --on-secondary: #ffffff;
+  --secondary-container: #adedd3;
+  --on-secondary-container: #306d58;
+  --tertiary: #55615f;
+  --tertiary-container: #98a5a3;
+  --on-tertiary-container: #2f3b39;
+  --error: #ba1a1a;
+  --negative: #f43f5e;
+  --background: #f8f9ff;
+  --foreground: #0b1c30;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-plus-jakarta), sans-serif;
+  font-family: var(--font-plus-jakarta), Inter, sans-serif;
 }
 
 .material-symbols-outlined {
