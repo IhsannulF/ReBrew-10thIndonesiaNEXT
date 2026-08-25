@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { WasteCompositionItem } from "@/types/dashboard";
 import { formatWeight } from "@/lib/dashboard-utils";
@@ -52,59 +53,76 @@ export const WasteCompositionSection: React.FC<WasteCompositionSectionProps> = (
       default:
         return {
           bg: "bg-[#f9faf8]",
-          border: "border-[#e5ebe5]",
-          text: "text-[#1a2a1b]",
-          badgeBg: "bg-[#f5f4ef] text-[#556957]",
+          border: "border-[#bbcabf]/30",
+          text: "text-[#0b1c30]",
+          badgeBg: "bg-[#eff4ff] text-[#3c4a42]",
         };
     }
   };
 
+  const hasData = totalWasteKg > 0 && composition.some((c) => c.weightKg > 0);
+
   return (
     <section
-      className="flex w-full flex-col rounded-2xl border border-[#d8e6d9] bg-white p-6 sm:p-7 shadow-xs"
+      className="flex w-full flex-col rounded-2xl border border-[#bbcabf]/40 bg-white p-6 sm:p-7 shadow-xs"
       aria-labelledby="waste-distribution-heading"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-5 border-b border-[#f0f4f0]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-5 border-b border-[#bbcabf]/20">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e0f2fe] text-[#0284c7] shadow-2xs">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shadow-2xs">
             <GoogleIcon name="pie_chart" size={20} />
           </div>
           <div>
             <h2
               id="waste-distribution-heading"
-              className="text-base sm:text-lg font-bold text-[#1a2a1b]"
+              className="text-base sm:text-lg font-bold text-[#0b1c30]"
             >
               Komposisi 5 Kategori Sampah Kafe
             </h2>
-            <p className="text-xs sm:text-sm text-[#6b7c6f] mt-0.5">
+            <p className="text-xs sm:text-sm text-[#3c4a42] mt-0.5">
               Pilah sampah berdasarkan kategori material bahan baku daur ulang
             </p>
           </div>
         </div>
 
-        <span className="self-start sm:self-auto text-xs sm:text-sm font-bold text-[#15803d] bg-[#dcfce7] px-3.5 py-1.5 rounded-xl border border-[#a7f3d0] shadow-2xs">
+        <span className="self-start sm:self-auto text-xs sm:text-sm font-bold text-[#006c49] bg-[#eff4ff] px-3.5 py-1.5 rounded-xl border border-[#adedd3] shadow-2xs">
           Total: {formatWeight(totalWasteKg)}
         </span>
       </div>
 
-      {/* Multi-segment Progress Bar with height and roundedness */}
+      {/* Multi-segment Progress Bar */}
       <div className="mt-6 flex flex-col gap-3">
-        <div className="h-4 w-full overflow-hidden rounded-full bg-[#f1f5f9] flex shadow-inner p-0.5">
-          {composition.map((item) => (
-            <div
-              key={item.key}
-              style={{
-                width: `${item.percentage}%`,
-                backgroundColor: item.color,
-              }}
-              className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500 hover:opacity-90"
-              title={`${item.name}: ${item.weightKg} kg (${item.percentage}%)`}
-            />
-          ))}
-        </div>
+        {hasData ? (
+          <div className="h-4 w-full overflow-hidden rounded-full bg-[#f1f5f9] flex shadow-inner p-0.5">
+            {composition.map((item) => (
+              <div
+                key={item.key}
+                style={{
+                  width: `${item.percentage}%`,
+                  backgroundColor: item.color,
+                }}
+                className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500 hover:opacity-90"
+                title={`${item.name}: ${item.weightKg} kg (${item.percentage}%)`}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f8f9ff] border border-[#bbcabf]/30 text-xs text-[#3c4a42]">
+            <div className="flex items-center gap-2">
+              <GoogleIcon name="info" size={17} className="text-[#006c49]" />
+              <span>Belum ada setoran sampah. Komposisi akan terhitung otomatis saat Anda mulai menyetor.</span>
+            </div>
+            <Link
+              href="/dashboard/setor"
+              className="font-bold text-[#006c49] hover:underline shrink-0 ml-2"
+            >
+              Setor Sekarang →
+            </Link>
+          </div>
+        )}
 
-        {/* 5-Category Legends Grid with rich colorful cards and spacing */}
+        {/* 5-Category Legends Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-3">
           {composition.map((item) => {
             const theme = getCategoryTheme(item.key);
@@ -119,11 +137,11 @@ export const WasteCompositionSection: React.FC<WasteCompositionSectionProps> = (
                     style={{ backgroundColor: item.color }}
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs sm:text-sm font-bold text-[#1a2a1b] truncate">
+                    <span className="text-xs sm:text-sm font-bold text-[#0b1c30] truncate">
                       {item.name}
                     </span>
-                    <span className="text-[11px] text-[#6b7c6f]">
-                      +{item.points} Koin/kg
+                    <span className="text-[11px] text-[#3c4a42]">
+                      +{item.points} Poin/kg
                     </span>
                   </div>
                 </div>
@@ -132,7 +150,7 @@ export const WasteCompositionSection: React.FC<WasteCompositionSectionProps> = (
                   <span className={`text-xs sm:text-sm font-black ${theme.text}`}>
                     {formatWeight(item.weightKg)}
                   </span>
-                  <span className="text-[11px] font-semibold text-[#6b7c6f]">
+                  <span className="text-[11px] font-semibold text-[#3c4a42]">
                     {item.percentage}%
                   </span>
                 </div>

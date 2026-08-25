@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
-import { DashboardData, CafeProfile } from "@/types/dashboard";
+import { DashboardData, CafeProfile, DashboardNotification } from "@/types/dashboard";
 import { initialDashboardData } from "@/lib/mock-dashboard-data";
+import { createClient } from "@/utils/supabase/client";
 import { MetricCardsSection } from "./sections/MetricCardsSection";
 import { RecentTransactionsSection } from "./sections/RecentTransactionsSection";
 import { WasteCompositionSection } from "./sections/WasteCompositionSection";
@@ -27,11 +28,15 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
   // Use data prop or fallback to initialDashboardData
   const activeData: DashboardData = data || initialDashboardData;
   
-  const [isNotificationVisible, setIsNotificationVisible] = useState(
+  // Real-time Live Notification State
+  const [liveNotification, setLiveNotification] = useState<DashboardNotification | undefined | null>(
+    activeData.notification
+  );
+  const [isNotificationVisible, setIsNotificationVisible] = useState<boolean>(
     Boolean(activeData.notification)
   );
   const [activeTab, setActiveTab] = useState<"overview" | "leaderboard_gamification">("overview");
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
 
   // Profile resolution with priority
   const profile: CafeProfile = {
@@ -41,6 +46,42 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
     cafeName: userProp?.cafeName || activeData.user.cafeName,
     tierLabel: userProp?.tierLabel || activeData.user.tierLabel,
   };
+
+  // 1. Supabase Real-Time Listener for Instant IoT Transaction Alerts
+  useEffect(() => {
+    if (!profile.id) return;
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`realtime-tx-alerts-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transactions",
+          filter: `user_id=eq.${profile.id}`,
+        },
+        (payload: any) => {
+          const tx = payload.new;
+          if (tx && tx.status === "confirmed") {
+            setLiveNotification({
+              id: tx.id,
+              message: `Setoran ${tx.id} Terverifikasi!`,
+              detail: `Timbangan ${tx.scale_model || "Digital IoT"} mencatat ${tx.total_weight_kg} kg · +${tx.total_points} Koin ditambahkan`,
+              coinsEarned: Number(tx.total_points || 0),
+              timestamp: "Baru saja",
+            });
+            setIsNotificationVisible(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile.id]);
 
   const isScaleOnline = activeData.deviceStatus.scaleStatus === "online";
 
@@ -54,9 +95,11 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
               <GoogleIcon name="storefront" size={15} />
               <span className="truncate max-w-[200px] sm:max-w-none">{profile.cafeName}</span>
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#fef3c7] border border-[#fde68a] px-3 py-1 text-xs font-bold text-[#92400e]">
-              {profile.tierLabel}
-            </span>
+            {profile.tierLabel ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#fef3c7] border border-[#fde68a] px-3 py-1 text-xs font-bold text-[#92400e]">
+                {profile.tierLabel}
+              </span>
+            ) : null}
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
                 isScaleOnline
@@ -80,7 +123,7 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
             Selamat Datang, {profile.name} 👋
           </h1>
           <p className="text-xs sm:text-sm text-[#3c4a42] leading-relaxed">
-            Pantau aktivitas penimbangan 5 kategori limbah kafe, perolehan koin, dan peringkat leaderboard Anda.
+            Pantau aktivitas penimbangan limbah kafe, perolehan koin, dan peringkat leaderboard Anda.
           </p>
         </div>
 
@@ -89,7 +132,7 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
           <button
             type="button"
             onClick={() => setIsShareModalOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#bbcabf]/50 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#006c49] shadow-2xs transition-all hover:bg-[#eff4ff] hover:border-[#006c49]"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#bbcabf]/50 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#006c49] shadow-2xs transition-all hover:bg-[#eff4ff] hover:border-[#006c49] cursor-pointer"
           >
             <GoogleIcon name="share" size={17} />
             <span className="hidden sm:inline">Bagikan</span>
@@ -113,10 +156,10 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
         </div>
       </header>
 
-      {/* 2. Notification Banner */}
-      {isNotificationVisible && activeData.notification && (
+      {/* 2. Real-Time Dynamic Notification Banner */}
+      {isNotificationVisible && liveNotification && (
         <section
-          className="relative flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-[#adedd3] bg-gradient-to-r from-[#eff4ff] via-[#f0fdf4] to-[#eff4ff] p-4 sm:px-6 sm:py-4 shadow-xs"
+          className="relative flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-[#adedd3] bg-gradient-to-r from-[#eff4ff] via-[#f0fdf4] to-[#eff4ff] p-4 sm:px-6 sm:py-4 shadow-xs animate-in fade-in slide-in-from-top-2 duration-300"
           aria-label="Notifikasi transaksi IoT"
         >
           <div className="flex items-center gap-3.5 min-w-0">
@@ -126,26 +169,37 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm font-bold text-[#006c49] truncate">
-                  {activeData.notification.message}
+                  {liveNotification.message}
                 </span>
                 <span className="hidden sm:inline-block rounded-full bg-[#adedd3] px-2 py-0.5 text-[10px] font-bold text-[#00422b]">
-                  IoT Sync
+                  IoT Sync Live
+                </span>
+                <span className="text-[11px] text-[#6c7a71]">
+                  ({liveNotification.timestamp})
                 </span>
               </div>
               <p className="text-xs text-[#3c4a42] mt-0.5">
-                {activeData.notification.detail}
+                {liveNotification.detail}
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsNotificationVisible(false)}
-            className="self-end sm:self-center flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-lg text-[#6c7a71] transition-colors hover:bg-black/5 hover:text-[#0b1c30]"
-            aria-label="Tutup notifikasi"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2.5 self-end sm:self-center">
+            <Link
+              href="/dashboard/riwayat"
+              className="text-xs font-bold text-[#006c49] hover:underline bg-white px-3 py-1.5 rounded-lg border border-[#adedd3] shadow-2xs"
+            >
+              Lihat Tiket
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsNotificationVisible(false)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-lg text-[#6c7a71] transition-colors hover:bg-black/5 hover:text-[#0b1c30] cursor-pointer"
+              aria-label="Tutup notifikasi"
+            >
+              ×
+            </button>
+          </div>
         </section>
       )}
 
@@ -157,7 +211,7 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab("overview")}
-          className={`flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+          className={`flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === "overview"
               ? "bg-[#006c49] text-white shadow-sm"
               : "text-[#3c4a42] hover:bg-[#eff4ff] hover:text-[#006c49]"
@@ -170,7 +224,7 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab("leaderboard_gamification")}
-          className={`flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+          className={`flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === "leaderboard_gamification"
               ? "bg-[#006c49] text-white shadow-sm"
               : "text-[#3c4a42] hover:bg-[#eff4ff] hover:text-[#006c49]"
@@ -179,7 +233,7 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
           <GoogleIcon name="leaderboard" size={18} filled={activeTab === "leaderboard_gamification"} />
           <span>Leaderboard & Gamifikasi</span>
           <span className="hidden sm:inline-block rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-[10px] font-extrabold text-[#92400e]">
-            Rank #{profile.rankInCity || 2}
+            Rank #{profile.rankInCity || 1}
           </span>
         </button>
       </nav>

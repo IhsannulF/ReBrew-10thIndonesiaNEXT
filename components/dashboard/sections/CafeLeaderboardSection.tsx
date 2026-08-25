@@ -110,9 +110,15 @@ export const CafeLeaderboardSection: React.FC<CafeLeaderboardSectionProps> = ({
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] text-[#3c4a42] truncate">
-                    {entry.tierLabel}
-                  </span>
+                  {entry.tierLabel ? (
+                    <span className="text-[11px] font-bold text-[#92400e] truncate">
+                      {entry.tierLabel}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-[#6c7a71] truncate">
+                      {entry.city}
+                    </span>
+                  )}
                 </div>
               </div>
 

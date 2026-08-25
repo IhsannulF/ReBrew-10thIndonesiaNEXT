@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { TransactionItem } from "@/types/dashboard";
@@ -15,6 +15,8 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
   transactions,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5; // Maksimal 5 riwayat per tampilan halaman
 
   const filterTabs: { key: string; label: string; activeColor: string }[] = [
     { key: "all", label: "Semua", activeColor: "bg-[#006c49]" },
@@ -25,10 +27,24 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
     { key: "kaleng", label: "Kaleng", activeColor: "bg-[#006c49]" },
   ];
 
-  const filteredTransactions = transactions.filter((tx) => {
-    if (selectedCategory === "all") return true;
-    return tx.categoryKey === selectedCategory;
-  });
+  const handleCategoryChange = (key: string) => {
+    setSelectedCategory(key);
+    setCurrentPage(1);
+  };
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      if (selectedCategory === "all") return true;
+      return tx.categoryKey === selectedCategory;
+    });
+  }, [transactions, selectedCategory]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
+
+  const startRecord = filteredTransactions.length === 0 ? 0 : startIndex + 1;
+  const endRecord = Math.min(startIndex + itemsPerPage, filteredTransactions.length);
 
   return (
     <section
@@ -49,7 +65,7 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
               Transaksi Daur Ulang
             </h2>
             <p className="text-xs sm:text-sm text-[#3c4a42] mt-0.5">
-              Riwayat setoran sampah 5 kategori bahan baku
+              Riwayat setoran sampah (Maks. 5 item per halaman)
             </p>
           </div>
         </div>
@@ -62,8 +78,8 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setSelectedCategory(tab.key)}
-                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+                onClick={() => handleCategoryChange(tab.key)}
+                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                   isActive
                     ? `${tab.activeColor} text-white shadow-xs`
                     : "bg-[#eff4ff] text-[#3c4a42] hover:bg-[#dce9ff] hover:text-[#006c49]"
@@ -77,8 +93,8 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
       </div>
 
       {/* Transactions List */}
-      <div className="divide-y divide-[#bbcabf]/20 w-full mt-2">
-        {filteredTransactions.length === 0 ? (
+      <div className="divide-y divide-[#bbcabf]/20 w-full mt-2 min-h-[300px]">
+        {paginatedTransactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center w-full">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eff4ff] text-[#6c7a71] mb-3">
               <GoogleIcon name="folder_open" size={28} />
@@ -91,7 +107,7 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
             </p>
           </div>
         ) : (
-          filteredTransactions.map((tx) => {
+          paginatedTransactions.map((tx) => {
             const categoryInfo =
               WASTE_CATEGORIES[tx.categoryKey] || WASTE_CATEGORIES.botol_plastik;
 
@@ -182,18 +198,61 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
         )}
       </div>
 
-      {/* Bottom Link */}
-      <div className="mt-5 pt-4 border-t border-[#bbcabf]/20 flex items-center justify-between text-xs sm:text-sm w-full">
+      {/* Pagination Bar (Max 5 items per page) */}
+      <div className="mt-5 pt-4 border-t border-[#bbcabf]/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm w-full">
         <span className="text-[#3c4a42]">
-          Menampilkan <strong className="text-[#0b1c30]">{filteredTransactions.length}</strong> dari {transactions.length} transaksi
+          Menampilkan <strong className="text-[#0b1c30]">{startRecord} - {endRecord}</strong> dari <strong className="text-[#0b1c30]">{filteredTransactions.length}</strong> transaksi
         </span>
-        <Link
-          href="/dashboard/riwayat"
-          className="font-bold text-[#006c49] hover:underline flex items-center gap-1.5"
-        >
-          <span>Lihat Riwayat Lengkap</span>
-          <span>→</span>
-        </Link>
+
+        <div className="flex items-center gap-3">
+          {/* Pagination Buttons if more than 1 page */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#bbcabf]/40 bg-white text-[#3c4a42] hover:bg-[#eff4ff] hover:text-[#006c49] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                title="Halaman Sebelumnya"
+              >
+                <GoogleIcon name="chevron_left" size={18} />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                <button
+                  key={pg}
+                  type="button"
+                  onClick={() => setCurrentPage(pg)}
+                  className={`flex h-8 min-w-[32px] px-2 items-center justify-center rounded-lg text-xs font-bold transition ${
+                    currentPage === pg
+                      ? "bg-[#006c49] text-white shadow-xs"
+                      : "border border-[#bbcabf]/40 bg-white text-[#3c4a42] hover:bg-[#eff4ff]"
+                  }`}
+                >
+                  {pg}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#bbcabf]/40 bg-white text-[#3c4a42] hover:bg-[#eff4ff] hover:text-[#006c49] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                title="Halaman Berikutnya"
+              >
+                <GoogleIcon name="chevron_right" size={18} />
+              </button>
+            </div>
+          )}
+
+          <Link
+            href="/dashboard/riwayat"
+            className="font-bold text-[#006c49] hover:underline flex items-center gap-1 ml-2"
+          >
+            <span>Lihat Riwayat Lengkap</span>
+            <GoogleIcon name="arrow_forward" size={16} />
+          </Link>
+        </div>
       </div>
     </section>
   );

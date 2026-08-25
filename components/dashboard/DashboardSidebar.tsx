@@ -37,9 +37,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 }) => {
   const pathname = usePathname();
 
-  const userName = user?.name || user?.email?.split("@")[0] || "Budi Santoso";
-  const tierName = user?.tier || "Eco Partner ⭐";
-  const initial = userName.charAt(0).toUpperCase() || "B";
+  const userName = user?.name || user?.email?.split("@")[0] || "Mitra Kafe";
+  const tierName = user?.tier || "";
+  const initial = userName.charAt(0).toUpperCase() || "M";
 
   return (
     <aside
@@ -110,14 +110,20 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               {initial}
             </div>
 
-            {/* Name & Tier */}
+            {/* Name & Badge (Hanya tampil jika sudah mendapatkan badge) */}
             <div className="flex flex-col min-w-0">
               <span className="truncate text-xs font-bold text-[#0b1c30]">
                 {userName}
               </span>
-              <span className="truncate text-[11px] font-medium text-[#3c4a42]">
-                {tierName}
-              </span>
+              {tierName ? (
+                <span className="truncate text-[11px] font-bold text-[#92400e]">
+                  {tierName}
+                </span>
+              ) : (
+                <span className="truncate text-[11px] text-[#6c7a71]">
+                  {user?.cafeName || "Mitra Kafe"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -126,7 +132,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             <button
               type="submit"
               title="Keluar"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6c7a71] transition-colors hover:bg-white hover:text-[#ba1a1a]"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6c7a71] transition-colors hover:bg-white hover:text-[#ba1a1a] cursor-pointer"
             >
               <GoogleIcon name="logout" size={18} />
             </button>

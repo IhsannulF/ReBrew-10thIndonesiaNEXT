@@ -9,10 +9,14 @@ interface MetricCardsSectionProps {
 }
 
 export const MetricCardsSection: React.FC<MetricCardsSectionProps> = ({ stats }) => {
+  const targetKg = stats.targetKgThisMonth > 0 ? stats.targetKgThisMonth : 25;
   const targetPercent = Math.min(
     100,
-    Math.round((stats.wasteKgThisMonth / stats.targetKgThisMonth) * 100)
+    Math.round((stats.wasteKgThisMonth / targetKg) * 100)
   );
+
+  // Dynamic tree equivalent calculation (1 tree absorbs ~3.5kg CO2 per cycle)
+  const treesEquivalent = stats.co2SavedKg > 0 ? Math.max(1, Math.round(stats.co2SavedKg / 3.5)) : 0;
 
   return (
     <section
@@ -30,9 +34,17 @@ export const MetricCardsSection: React.FC<MetricCardsSectionProps> = ({ stats })
         cardBgGradient="bg-gradient-to-br from-[#ffffff] via-[#fffdf5] to-[#fef3c7]/30"
         cardBorderColor="border-[#fde68a]"
         valueColor="text-[#92400e]"
-        badgeText="+18 Baru"
-        badgeColor="bg-[#fef3c7] text-[#92400e] border border-[#fde68a]"
-        footerText={<span className="text-[#3c4a42]">Siap ditukar saldo kas</span>}
+        badgeText={stats.totalCoins > 0 ? `+${formatNumber(stats.totalCoins)} Aktif` : "0 Koin"}
+        badgeColor={
+          stats.totalCoins > 0
+            ? "bg-[#fef3c7] text-[#92400e] border border-[#fde68a]"
+            : "bg-[#eff4ff] text-[#6c7a71] border border-[#bbcabf]/40"
+        }
+        footerText={
+          <span className="text-[#3c4a42]">
+            {stats.totalCoins > 0 ? "Siap ditukar saldo kas" : "Kumpulkan koin dari setor sampah"}
+          </span>
+        }
       />
 
       {/* 2. Nilai Saldo Kas (Emerald Mint - Primary) */}
@@ -48,13 +60,17 @@ export const MetricCardsSection: React.FC<MetricCardsSectionProps> = ({ stats })
         badgeText="1 Koin = Rp 50"
         badgeColor="bg-[#eff4ff] text-[#006c49] border border-[#adedd3]"
         footerText={
-          <Link
-            href="/dashboard/saldo"
-            className="font-bold text-[#006c49] hover:underline inline-flex items-center gap-1"
-          >
-            <span>Tarik Kas</span>
-            <span>→</span>
-          </Link>
+          stats.balanceIdr > 0 ? (
+            <Link
+              href="/dashboard/saldo"
+              className="font-bold text-[#006c49] hover:underline inline-flex items-center gap-1"
+            >
+              <span>Tarik Kas</span>
+              <span>→</span>
+            </Link>
+          ) : (
+            <span className="text-[#6c7a71]">Bebas biaya admin transfer</span>
+          )
         }
       />
 
@@ -70,8 +86,12 @@ export const MetricCardsSection: React.FC<MetricCardsSectionProps> = ({ stats })
         cardBorderColor="border-[#bbcabf]/60"
         valueColor="text-[#2b6954]"
         badgeText={`${targetPercent}% Target`}
-        badgeColor="bg-[#eff4ff] text-[#2b6954] border border-[#bbcabf]/50"
-        footerText={<span className="text-[#3c4a42]">Target {stats.targetKgThisMonth} kg</span>}
+        badgeColor={
+          targetPercent >= 100
+            ? "bg-[#eff4ff] text-[#006c49] border border-[#adedd3] font-bold"
+            : "bg-[#eff4ff] text-[#2b6954] border border-[#bbcabf]/50"
+        }
+        footerText={<span className="text-[#3c4a42]">Target {targetKg} kg</span>}
       />
 
       {/* 4. Reduksi Emisi CO2 (Teal Mint) */}
@@ -85,9 +105,13 @@ export const MetricCardsSection: React.FC<MetricCardsSectionProps> = ({ stats })
         cardBgGradient="bg-gradient-to-br from-[#ffffff] via-[#f0fdfa] to-[#ccfbf1]/30"
         cardBorderColor="border-[#99f6e4]"
         valueColor="text-[#006c49]"
-        badgeText="🌱 ~2 Pohon"
+        badgeText={treesEquivalent > 0 ? `🌱 ~${treesEquivalent} Pohon` : "🌱 0 Pohon"}
         badgeColor="bg-[#ccfbf1] text-[#006c49] border border-[#99f6e4]"
-        footerText={<span className="text-[#3c4a42]">Tereduksi terverifikasi</span>}
+        footerText={
+          <span className="text-[#3c4a42]">
+            {stats.co2SavedKg > 0 ? "Tereduksi terverifikasi" : "Mulai pilah untuk kurangi emisi"}
+          </span>
+        }
       />
     </section>
   );

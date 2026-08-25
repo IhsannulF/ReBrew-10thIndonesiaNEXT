@@ -20,7 +20,7 @@ interface DashboardHeaderProps {
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const balanceCoins = user?.balanceCoins ?? 1480;
+  const balanceCoins = user?.balanceCoins ?? 0;
   const balanceIdr = user?.balanceIdr ?? balanceCoins * 50;
 
   return (
