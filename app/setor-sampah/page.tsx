@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { useDepositCalculator } from "@/hooks/useDepositCalculator";
@@ -11,17 +11,38 @@ import { SuccessTicketModal } from "@/components/SuccessTicketModal";
 export default function SetorSampahPage() {
   const {
     weights,
+    shareRate,
+    setShareRate,
     method,
     setMethod,
     selectedDropPoint,
     setSelectedDropPoint,
+    pickupDistance,
+    setPickupDistance,
+    pickupAddress,
+    setPickupAddress,
+    pickupNotes,
+    setPickupNotes,
     isSuccessModalOpen,
     setIsSuccessModalOpen,
     summary,
     handleWeightChange,
     adjustWeight,
+    resetWeights,
+    createdTicketCode,
+    isSubmitting,
     handleSubmit,
   } = useDepositCalculator();
+
+  // State untuk Widget Simulasi Skala Bulanan
+  const [simMonthlyKg, setSimMonthlyKg] = useState<number>(50);
+  const [showSimCard, setShowSimCard] = useState<boolean>(true);
+
+  // Perhitungan simulasi bulanan (asumsi mix rata-rata offtaker Rp 5.000 / kg)
+  const simOfftakerGross = simMonthlyKg * 5000;
+  const simShopReward = Math.round(simOfftakerGross * shareRate);
+  const simReBrewGrossMargin = simOfftakerGross - simShopReward;
+  const simCo2Saved = Math.round(simMonthlyKg * 1.2 * 10) / 10;
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -44,21 +65,144 @@ export default function SetorSampahPage() {
         </div>
 
         {/* Ringkasan Cepat Saldo / Dampak */}
-        <div className="flex items-center gap-3 bg-white border border-[#bbcabf]/30 rounded-2xl p-3 shadow-2xs">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49]">
-            <GoogleIcon name="eco" size={22} filled />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#6c7a71]">
-              Estimasi Poin
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 bg-white border border-[#bbcabf]/30 rounded-2xl p-3 shadow-2xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49]">
+              <GoogleIcon name="eco" size={22} filled />
             </div>
-            <div className="text-lg font-bold text-[#006c49]">
-              +{summary.finalPoints}{" "}
-              <span className="text-xs font-medium text-[#306d58]">Poin</span>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#6c7a71]">
+                Estimasi Poin
+              </div>
+              <div className="text-lg font-bold text-[#006c49]">
+                +{summary.finalPoints.toLocaleString("id-ID")}{" "}
+                <span className="text-xs font-medium text-[#306d58]">
+                  (≈ Rp {summary.equivalentRupiah.toLocaleString("id-ID")})
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Interactive Simulation & Unit Economics Banner */}
+      {showSimCard && (
+        <div className="rounded-3xl border border-[#006c49]/25 bg-linear-to-r from-[#f0fdf4] via-[#f8fafc] to-[#eff6ff] p-5 sm:p-6 lg:pr-12 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#006c49] text-white">
+                  Kalkulator Unit Economics
+                </span>
+                <span className="text-xs font-semibold text-[#006c49]">
+                  Model Bagi Hasil Transparan
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-extrabold text-[#0b1c30]">
+                Simulasi Skala Bulanan: Proyeksi Nilai Daur Ulang Kafe
+              </h2>
+              <p className="text-xs text-[#3c4a42] mt-1 max-w-2xl">
+                ReBrew mengkonversi sampah kafe ke offtaker recycler dengan rentang pembagian poin <strong>20% – 40% (standar {Math.round(shareRate * 100)}%)</strong>. 1 Poin = Rp 1 yang langsung masuk ke saldo kafe.
+              </p>
+
+              {/* Slider Simulasi Bulanan & Buffer Share Rate */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 max-w-xl">
+                <div className="bg-white/80 backdrop-blur-xs p-3 rounded-2xl border border-[#bbcabf]/30">
+                  <div className="flex justify-between text-xs font-bold text-[#0b1c30] mb-1">
+                    <span>Estimasi Sampah Kafe:</span>
+                    <span className="text-[#006c49]">{simMonthlyKg} kg / bulan</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="300"
+                    step="10"
+                    value={simMonthlyKg}
+                    onChange={(e) => setSimMonthlyKg(parseInt(e.target.value))}
+                    className="w-full accent-[#006c49] cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-[#6c7a71] mt-1">
+                    <span>10 kg</span>
+                    <span>50 kg</span>
+                    <span>150 kg</span>
+                    <span>300 kg</span>
+                  </div>
+                </div>
+
+                <div className="bg-white/80 backdrop-blur-xs p-3 rounded-2xl border border-[#bbcabf]/30">
+                  <div className="flex justify-between text-xs font-bold text-[#0b1c30] mb-1">
+                    <span>Buffer Share Rate:</span>
+                    <span className="text-[#006c49]">{Math.round(shareRate * 100)}% dari Offtaker</span>
+                  </div>
+                  <div className="flex gap-1.5 mt-2">
+                    {[0.25, 0.35, 0.40].map((rate) => (
+                      <button
+                        key={rate}
+                        type="button"
+                        onClick={() => setShareRate(rate)}
+                        className={`flex-1 py-1 rounded-lg text-xs font-bold transition-all ${
+                          shareRate === rate
+                            ? "bg-[#006c49] text-white shadow-2xs"
+                            : "bg-[#f8f9ff] text-[#3c4a42] border border-[#bbcabf]/30 hover:bg-white"
+                        }`}
+                      >
+                        {rate * 100}%
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-[#6c7a71] block mt-1">
+                    Buffer otomatis untuk fluktuasi pasar daur ulang
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metric Results Box */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2.5 w-full lg:w-64 shrink-0">
+              <div className="bg-white p-3 rounded-2xl border border-[#bbcabf]/30 shadow-2xs">
+                <div className="text-[10px] font-semibold text-[#6c7a71]">
+                  Nilai Jual ke Recycler
+                </div>
+                <div className="text-sm font-extrabold text-[#0b1c30]">
+                  Rp {simOfftakerGross.toLocaleString("id-ID")}
+                </div>
+                <div className="text-[10px] text-[#6c7a71]">({simMonthlyKg} kg × Rp5.000)</div>
+              </div>
+
+              <div className="bg-[#f0fdf4] p-3 rounded-2xl border border-[#006c49]/30 shadow-2xs">
+                <div className="text-[10px] font-bold text-[#006c49]">
+                  Penghasilan Kafe (Poin)
+                </div>
+                <div className="text-base font-extrabold text-[#006c49]">
+                  Rp {simShopReward.toLocaleString("id-ID")}
+                </div>
+                <div className="text-[10px] text-[#306d58]">
+                  +{simShopReward.toLocaleString("id-ID")} Poin ({Math.round(shareRate * 100)}%)
+                </div>
+              </div>
+
+              <div className="bg-white p-3 rounded-2xl border border-[#bbcabf]/30 shadow-2xs col-span-2 sm:col-span-1">
+                <div className="text-[10px] font-semibold text-[#6c7a71]">
+                  Margin Kotor ReBrew
+                </div>
+                <div className="text-sm font-bold text-[#0b1c30]">
+                  Rp {simReBrewGrossMargin.toLocaleString("id-ID")}
+                </div>
+                <div className="text-[10px] text-[#6c7a71]">Operasional & Logistik</div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowSimCard(false)}
+            className="absolute top-3.5 right-3.5 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 border border-[#bbcabf]/50 shadow-xs text-[#6c7a71] hover:text-[#ba1a1a] hover:bg-white hover:scale-105 active:scale-95 transition-all"
+            aria-label="Tutup Banner Simulasi"
+          >
+            <GoogleIcon name="close" size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Form Container */}
       <form
@@ -69,8 +213,10 @@ export default function SetorSampahPage() {
         <div className="lg:col-span-7">
           <WasteCategoryList
             weights={weights}
+            shareRate={shareRate}
             handleWeightChange={handleWeightChange}
             adjustWeight={adjustWeight}
+            resetWeights={resetWeights}
           />
         </div>
 
@@ -81,6 +227,12 @@ export default function SetorSampahPage() {
             setMethod={setMethod}
             selectedDropPoint={selectedDropPoint}
             setSelectedDropPoint={setSelectedDropPoint}
+            pickupDistance={pickupDistance}
+            setPickupDistance={setPickupDistance}
+            pickupAddress={pickupAddress}
+            setPickupAddress={setPickupAddress}
+            pickupNotes={pickupNotes}
+            setPickupNotes={setPickupNotes}
             summary={summary}
           />
         </div>
@@ -89,10 +241,15 @@ export default function SetorSampahPage() {
       {/* Modal Sukses Tiket Setor */}
       {isSuccessModalOpen && (
         <SuccessTicketModal
+          method={method}
+          selectedDropPoint={selectedDropPoint}
+          pickupAddress={pickupAddress}
           summary={summary}
+          ticketCode={createdTicketCode}
           onClose={() => setIsSuccessModalOpen(false)}
         />
       )}
     </div>
   );
 }
+

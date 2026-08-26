@@ -450,10 +450,11 @@ export default async function DashboardPage() {
         });
       }
 
-      // 7. Pure Live Leaderboard (Only Real Registered Users from public.profiles)
+      // 7. Pure Live Leaderboard (Hanya Menampilkan Mitra Kafe, Akun Admin Dikecualikan)
       const { data: dbProfiles } = await supabase
         .from("profiles")
-        .select("id, full_name, cafe_name, city, total_kg, saldo_poin, tier")
+        .select("id, full_name, cafe_name, city, total_kg, saldo_poin, tier, role")
+        .neq("role", "admin")
         .order("total_kg", { ascending: false });
 
       // Fetch all unlocked badges for all users
@@ -468,10 +469,10 @@ export default async function DashboardPage() {
         userBadgeMap.set(ub.user_id, list);
       });
 
-      let profileList = dbProfiles ? [...dbProfiles] : [];
+      let profileList = dbProfiles ? dbProfiles.filter((p: any) => p.role !== "admin") : [];
 
-      // Ensure current logged-in profile exists in list
-      if (!profileList.some((p: any) => p.id === user.id)) {
+      // Ensure current logged-in profile exists in list if they are a partner/mitra
+      if (profile?.role !== "admin" && !profileList.some((p: any) => p.id === user.id)) {
         profileList.push({
           id: user.id,
           full_name: userName,
@@ -480,6 +481,7 @@ export default async function DashboardPage() {
           total_kg: totalKg,
           saldo_poin: saldoCoins,
           tier: userTier,
+          role: "mitra",
         });
       }
 

@@ -6,7 +6,7 @@ import {
   WasteCategoryKey,
   DepositMethod,
 } from "@/types/transaction";
-import { INITIAL_TRANSACTIONS } from "@/constants/transactionHistoryData";
+import { getUserTransactionHistory } from "@/app/actions/transactions";
 
 export interface TransactionSummaryStats {
   totalCount: number;
@@ -17,10 +17,11 @@ export interface TransactionSummaryStats {
 }
 
 export function useTransactionHistory(
-  initialData: TransactionDetail[] = INITIAL_TRANSACTIONS,
+  initialData?: TransactionDetail[],
   itemsPerPage: number = 5
 ) {
-  const [transactions, setTransactions] = useState<TransactionDetail[]>(initialData);
+  const [transactions, setTransactions] = useState<TransactionDetail[]>(initialData || []);
+  const [isLoading, setIsLoading] = useState<boolean>(!initialData);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [filters, setFilters] = useState<TransactionFilterState>({
     searchQuery: "",
@@ -31,6 +32,24 @@ export function useTransactionHistory(
   });
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionDetail | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
+
+  // Fetch real user transactions from Supabase database
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const data = await getUserTransactionHistory();
+        setTransactions(data);
+      } catch (err) {
+        console.error("Error loading user transaction history:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
 
   // Reset page to 1 whenever filters change
   const setSearchQuery = (query: string) => {
@@ -179,6 +198,7 @@ export function useTransactionHistory(
 
   return {
     transactions,
+    isLoading,
     filteredTransactions,
     paginatedTransactions,
     currentPage,
