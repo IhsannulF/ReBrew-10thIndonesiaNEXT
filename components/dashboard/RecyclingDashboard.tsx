@@ -15,6 +15,7 @@ import { DeviceCollectorStatusSection } from "./sections/DeviceCollectorStatusSe
 import { CafeLeaderboardSection } from "./sections/CafeLeaderboardSection";
 import { GamificationSection } from "./sections/GamificationSection";
 import { ShareImpactModal } from "./sections/ShareImpactModal";
+import { EcoCertificateLevelSection } from "./sections/EcoCertificateLevelSection";
 
 interface RecyclingDashboardProps {
   data?: DashboardData;
@@ -240,22 +241,31 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
 
       {/* 5. Main Dynamic Layout Content */}
       {activeTab === "overview" ? (
-        <div className="flex flex-col lg:flex-row gap-6 items-start w-full min-w-0">
-          {/* Left Main Area: Recent Transactions & Waste Breakdown */}
-          <div className="flex-1 min-w-0 flex flex-col gap-6 w-full">
-            <RecentTransactionsSection transactions={activeData.recentTransactions} />
-            <WasteCompositionSection
-              composition={activeData.wasteComposition}
-              totalWasteKg={activeData.stats.wasteKgThisMonth}
-            />
+        <div className="flex flex-col gap-6 w-full min-w-0">
+          <div className="flex flex-col lg:flex-row gap-6 items-start w-full min-w-0">
+            {/* Left Main Area: Recent Transactions & Waste Breakdown */}
+            <div className="flex-1 min-w-0 flex flex-col gap-6 w-full">
+              <RecentTransactionsSection transactions={activeData.recentTransactions} />
+              <WasteCompositionSection
+                composition={activeData.wasteComposition}
+                totalWasteKg={activeData.stats.wasteKgThisMonth}
+              />
+            </div>
+
+            {/* Right Sidebar Area: Target, Quick Actions & IoT Scale Status */}
+            <div className="w-full lg:w-[330px] xl:w-[350px] shrink-0 flex flex-col gap-6">
+              <MonthlyTargetSection target={activeData.target} />
+              <QuickActionsSection onOpenShareModal={() => setIsShareModalOpen(true)} />
+              <DeviceCollectorStatusSection deviceStatus={activeData.deviceStatus} />
+            </div>
           </div>
 
-          {/* Right Sidebar Area: Target, Quick Actions & IoT Scale Status */}
-          <div className="w-full lg:w-[330px] xl:w-[350px] shrink-0 flex flex-col gap-6">
-            <MonthlyTargetSection target={activeData.target} />
-            <QuickActionsSection onOpenShareModal={() => setIsShareModalOpen(true)} />
-            <DeviceCollectorStatusSection deviceStatus={activeData.deviceStatus} />
-          </div>
+          {/* Sertifikat Eco-Partner Berlevel Section */}
+          <EcoCertificateLevelSection
+            cafeName={profile.cafeName}
+            city={profile.city || "Surabaya"}
+            totalKg={activeData.stats.wasteKgThisMonth}
+          />
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 items-start w-full min-w-0">

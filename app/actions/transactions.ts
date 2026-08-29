@@ -12,15 +12,83 @@ export interface CreateDepositInput {
   selectedDropPoint: string
   pickupAddress: string
   pickupNotes?: string
+  pickupDate?: string // Format: YYYY-MM-DD
+  pickupTimeSlot?: string // e.g. "09:00 - 12:00 WIB"
   totalWeight: number
   finalPoints: number
   totalCo2: number
+}
+
+/**
+ * Otomatis menolak penjemputan yang telah melewati batas jadwal waktu yang ditentukan
+ */
+export async function autoRejectExpiredPickups(supabase: any) {
+  try {
+    const now = new Date()
+
+    // 1. Ambil transaksi berstatus pending dengan metode penjemputan
+    const { data: pendingPickups, error } = await supabase
+      .from('transactions')
+      .select('id, created_at, notes, type, status')
+      .eq('status', 'pending')
+
+    if (error || !pendingPickups || pendingPickups.length === 0) return
+
+    const expiredIds: string[] = []
+
+    for (const tx of pendingPickups) {
+      const isPickup = tx.type === 'dijemput' || (tx.notes && tx.notes.includes('Dijemput'))
+      if (!isPickup) continue
+
+      // Cek apakah ada jadwal spesifik di notes atau created_at
+      let isExpired = false
+      const notes = tx.notes || ''
+
+      // Cek apakah ada format [JADWAL_EXP: timestamp]
+      const expMatch = notes.match(/\[JADWAL_EXP:([^\]]+)\]/)
+      if (expMatch && expMatch[1]) {
+        const expTime = new Date(expMatch[1])
+        if (!isNaN(expTime.getTime()) && now.getTime() > expTime.getTime()) {
+          isExpired = true
+        }
+      } else {
+        // Fallback: Jika penjemputan sudah lebih dari 24 jam sejak dibuat dan belum diproses
+        const createdAt = new Date(tx.created_at || 0)
+        const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
+        if (diffHours >= 24) {
+          isExpired = true
+        }
+      }
+
+      if (isExpired) {
+        expiredIds.push(tx.id)
+      }
+    }
+
+    // 2. Update seluruh transaksi penjemputan yang kedaluwarsa menjadi 'rejected'
+    if (expiredIds.length > 0) {
+      for (const id of expiredIds) {
+        await supabase
+          .from('transactions')
+          .update({
+            status: 'rejected',
+            notes: `Otomatis Ditolak: Melewati batas waktu jadwal penjemputan armada tanpa konfirmasi penyerahan sampah.`,
+          })
+          .eq('id', id)
+      }
+    }
+  } catch (err) {
+    console.warn('Auto reject expired pickups warning:', err)
+  }
 }
 
 // 1. Server Action: Simpan Tiket Setor Sampah ke Supabase Database
 export async function createDepositTransaction(input: CreateDepositInput) {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
+
+  // Jalankan auto-reject terlebih dahulu
+  await autoRejectExpiredPickups(supabase)
 
   const {
     data: { user },
@@ -40,6 +108,30 @@ export async function createDepositTransaction(input: CreateDepositInput) {
   const primaryCatId = activeCategories[0]?.[0] || 'cup-plastik'
   const primaryCatObj = WASTE_CATEGORIES.find((c) => c.id === primaryCatId)
 
+  // Hitung jadwal kedaluwarsa jika metode dijemput
+  let scheduledExpIso = ''
+  let notesPayload = input.pickupNotes || ''
+
+  if (input.method === 'dijemput') {
+    const pickupDateStr = input.pickupDate || new Date().toISOString().split('T')[0]
+    const timeSlot = input.pickupTimeSlot || '09:00 - 12:00 WIB'
+
+    // Tentukan jam batas akhir slot (12:00, 15:00, atau 18:00 WIB)
+    let endHour = 18
+    if (timeSlot.includes('12:00')) endHour = 12
+    else if (timeSlot.includes('15:00')) endHour = 15
+    else if (timeSlot.includes('18:00')) endHour = 18
+
+    // Parse waktu kedaluwarsa (WIB = UTC+7)
+    const expDate = new Date(`${pickupDateStr}T${String(endHour).padStart(2, '0')}:00:00+07:00`)
+    scheduledExpIso = expDate.toISOString()
+
+    const scheduleLabel = `Jadwal Jemput: ${pickupDateStr} (${timeSlot})`
+    notesPayload = notesPayload
+      ? `${scheduleLabel} | ${notesPayload} [JADWAL_EXP:${scheduledExpIso}]`
+      : `${scheduleLabel} [JADWAL_EXP:${scheduledExpIso}]`
+  }
+
   // Insert ke tabel transactions
   const { data: txData, error: txError } = await supabase
     .from('transactions')
@@ -54,20 +146,20 @@ export async function createDepositTransaction(input: CreateDepositInput) {
       code: ticketCode,
       pickup_address: input.method === 'dijemput' ? input.pickupAddress : null,
       drop_point_id: input.method === 'drop_point' ? input.selectedDropPoint : null,
-      notes: input.pickupNotes || null,
+      notes: notesPayload || null,
       category: primaryCatObj?.name || 'Plastic Cup (PP/PET)',
     })
     .select()
     .single()
 
   if (txError) {
-    // Jika kolom tertentu berbeda nama di schema lama, insert dengan fallback kolom yang umum
     const { error: fallbackError } = await supabase.from('transactions').insert({
       id: txId,
       user_id: user.id,
       status: 'pending',
       total_weight: input.totalWeight,
       total_points: input.finalPoints,
+      notes: notesPayload || null,
     })
 
     if (fallbackError) {
@@ -109,6 +201,9 @@ export async function createDepositTransaction(input: CreateDepositInput) {
 export async function getUserTransactionHistory(): Promise<TransactionDetail[]> {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
+
+  // Jalankan auto-reject untuk mengupdate status kadaluwarsa secara live
+  await autoRejectExpiredPickups(supabase)
 
   const {
     data: { user },
@@ -161,6 +256,9 @@ export async function getUserTransactionHistory(): Promise<TransactionDetail[]> 
     const dropPointName =
       row.drop_points?.name || dropPointObj?.name || (row.type === 'drop_point' ? 'ReBrew Central Hub' : undefined)
 
+    // Deteksi apakah penolakan karena batas jadwal lewat
+    const isExpired = (row.notes || '').toLowerCase().includes('melewati batas waktu jadwal')
+
     return {
       id: row.code || row.id,
       categoryKey,
@@ -176,6 +274,7 @@ export async function getUserTransactionHistory(): Promise<TransactionDetail[]> 
       dropPointName,
       pickupAddress: row.pickup_address || undefined,
       notes: row.notes || undefined,
+      isExpired,
       verifiedAt: row.verified_at
         ? new Date(row.verified_at).toLocaleDateString('id-ID', {
             day: 'numeric',

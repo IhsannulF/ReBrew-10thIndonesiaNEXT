@@ -27,6 +27,8 @@ export interface TransactionDetail {
   scaleModel?: string;
   verifiedAt?: string;
   notes?: string;
+  scheduledPickupAt?: string;
+  isExpired?: boolean;
 }
 
 export interface TransactionFilterState {

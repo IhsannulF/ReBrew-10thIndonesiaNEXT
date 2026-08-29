@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { autoRejectExpiredPickups } from "@/app/actions/transactions";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 
 export const dynamic = "force-dynamic";
@@ -10,37 +11,97 @@ export default async function AdminDashboardPage() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // 1. Fetch live metrics from Supabase
-  const { count: totalMitraCount } = await supabase
+  // 1. Jalankan auto-reject untuk membersihkan penjemputan kedaluwarsa
+  await autoRejectExpiredPickups(supabase);
+
+  // 2. Fetch live profiles (Mitra Kafe)
+  const { data: dbMitra } = await supabase
     .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("role", "mitra");
+    .select("id, full_name, cafe_name, city, total_kg, saldo_poin, role, tier, created_at")
+    .neq("role", "admin");
 
-  const { data: recentTransactions } = await supabase
+  const mitraList = dbMitra || [];
+  const totalMitraCount = mitraList.length;
+
+  // 3. Fetch live transactions
+  const { data: dbTransactions } = await supabase
     .from("transactions")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5);
+    .select(`
+      id,
+      user_id,
+      drop_point_id,
+      method,
+      pickup_address,
+      total_weight_kg,
+      total_points,
+      total_co2_kg,
+      status,
+      scale_model,
+      collector_name,
+      category,
+      notes,
+      created_at,
+      profiles (
+        cafe_name,
+        full_name,
+        city
+      ),
+      drop_points (
+        name
+      )
+    `)
+    .order("created_at", { ascending: false });
 
-  const { data: pendingPayouts } = await supabase
-    .from("withdrawal_requests")
-    .select("*")
-    .eq("status", "pending");
+  const transactionList = dbTransactions || [];
 
-  const { data: offtakerSales } = await supabase
-    .from("offtaker_sales")
-    .select("*, offtakers(name)")
-    .order("created_at", { ascending: false })
-    .limit(4);
+  // 4. Fetch live payouts / withdrawal requests
+  const { data: dbPayouts } = await supabase
+    .from("payouts")
+    .select("id, user_id, amount_idr, points_deducted, status, channel_name, created_at")
+    .order("created_at", { ascending: false });
 
-  // Fallback demo metrics if database is fresh
-  const totalKgAggregated = 1420.5; // kg
-  const totalCo2Prevented = 1704.6; // kg CO2e
-  const grossArbitrageRevenue = 7102500; // Rp
-  const rebrewGrossMargin = 4616625; // Rp (65%)
-  const pendingTicketCount = recentTransactions?.filter((t: any) => t.status === "pending").length || 3;
-  const pendingPayoutCount = pendingPayouts?.length || 2;
-  const activeMitra = totalMitraCount || 16;
+  const payoutList = dbPayouts || [];
+
+  // 5. Agregasi Kalkulasi Metrik Platform Real-Time dari Database
+  const totalKgAggregated = mitraList.reduce((acc, m) => acc + Number(m.total_kg || 0), 0);
+  const totalCo2Prevented = Math.round(totalKgAggregated * 1.2 * 10) / 10;
+  
+  // Model Arbitrase Unit Economics (Rata-rata jual ke offtaker Rp 5.000 / kg)
+  const grossArbitrageRevenue = Math.round(totalKgAggregated * 5000);
+  const rebrewGrossMargin = Math.round(grossArbitrageRevenue * 0.65); // 65% margin logistik & ops
+
+  // Antrean status
+  const pendingTransactions = transactionList.filter((t) => t.status === "pending");
+  const pendingTicketCount = pendingTransactions.length;
+  const pendingPayoutCount = payoutList.filter((p) => p.status === "processing" || p.status === "pending").length;
+
+  // 6. Hitung Stok Material di Micro-Hub dari Transaksi Terverifikasi
+  let cupPlastikKg = 0;
+  let botolPlastikKg = 0;
+  let ampasKopiKg = 0;
+  let kardusKalengKg = 0;
+
+  transactionList
+    .filter((t) => t.status === "confirmed")
+    .forEach((tx) => {
+      const weight = Number(tx.total_weight_kg || 0);
+      const cat = (tx.category || "").toLowerCase();
+
+      if (cat.includes("botol")) {
+        botolPlastikKg += weight;
+      } else if (cat.includes("ampas")) {
+        ampasKopiKg += weight;
+      } else if (cat.includes("kardus") || cat.includes("kaleng")) {
+        kardusKalengKg += weight;
+      } else {
+        cupPlastikKg += weight;
+      }
+    });
+
+  // Hub Capacity calculation (Kapasitas Micro-Hub 2.000 kg / 2.0 Ton)
+  const hubCapacityKg = 2000;
+  const currentStockKg = cupPlastikKg + botolPlastikKg + ampasKopiKg + kardusKalengKg;
+  const hubUsagePercent = Math.min(100, Math.round((currentStockKg / hubCapacityKg) * 100));
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,7 +118,7 @@ export default async function AdminDashboardPage() {
             Pusat Kendali Admin ReBrew
           </h1>
           <p className="text-xs sm:text-sm text-slate-200 mt-1">
-            Pantau agregasi limbah F&B, verifikasi timbangan aktual kafe, atur logistik armada, dan kelola penjualan bulk ke offtaker daur ulang.
+            Pantau agregasi limbah F&B dari {totalMitraCount} mitra kafe, verifikasi timbangan fisik, atur logistik armada, dan kelola penjualan bulk ke offtaker daur ulang.
           </p>
         </div>
 
@@ -114,10 +175,10 @@ export default async function AdminDashboardPage() {
           </div>
           <div className="mt-3">
             <div className="text-2xl font-extrabold text-[#006c49]">
-              Rp {(grossArbitrageRevenue / 1000000).toFixed(2)}M
+              Rp {grossArbitrageRevenue.toLocaleString("id-ID")}
             </div>
             <div className="text-[11px] text-[#6c7a71] font-medium mt-0.5">
-              Margin ReBrew: Rp {(rebrewGrossMargin / 1000000).toFixed(2)}M
+              Margin ReBrew (65%): Rp {rebrewGrossMargin.toLocaleString("id-ID")}
             </div>
           </div>
         </div>
@@ -132,11 +193,11 @@ export default async function AdminDashboardPage() {
           </div>
           <div className="mt-3">
             <div className="text-2xl font-extrabold text-[#0b1c30]">
-              {activeMitra}{" "}
+              {totalMitraCount}{" "}
               <span className="text-sm font-semibold text-[#6c7a71]">Kedai</span>
             </div>
             <div className="text-[11px] text-[#0369a1] font-medium mt-0.5">
-              Jawa Timur & Surabaya
+              Surabaya & Sekitarnya
             </div>
           </div>
         </div>
@@ -198,89 +259,74 @@ export default async function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#bbcabf]/20">
-                  {/* Mock item 1 */}
-                  <tr className="hover:bg-[#f8f9ff] transition-colors">
-                    <td className="py-3.5 pr-4 font-mono font-bold text-[#006c49]">RB-892104</td>
-                    <td className="py-3.5 pr-4 font-semibold text-[#0b1c30]">
-                      Kopi Selamat Cafe
-                      <span className="block text-[10px] text-[#6c7a71] font-normal">Gubeng, Surabaya</span>
-                    </td>
-                    <td className="py-3.5 pr-4">
-                      <span className="px-2 py-0.5 rounded-md bg-[#eff4ff] text-[#006c49] font-semibold text-[10px]">
-                        Drop Point (Hub)
-                      </span>
-                    </td>
-                    <td className="py-3.5 pr-4 font-bold text-[#0b1c30]">7.5 kg</td>
-                    <td className="py-3.5 pr-4">
-                      <span className="px-2 py-0.5 rounded-full bg-[#fef3c7] text-[#92400e] font-bold text-[10px]">
-                        Menunggu Timbang
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-right">
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 rounded-lg bg-[#006c49] text-white font-bold text-[11px] hover:bg-[#005237] transition-colors shadow-2xs"
-                      >
-                        Timbang & Setujui
-                      </button>
-                    </td>
-                  </tr>
+                  {transactionList.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-xs text-[#6c7a71]">
+                        Belum ada tiket setoran sampah yang masuk di sistem.
+                      </td>
+                    </tr>
+                  ) : (
+                    transactionList.slice(0, 5).map((tx: any) => {
+                      const cafeName = tx.profiles?.cafe_name || tx.profiles?.full_name || "Mitra Kafe";
+                      const city = tx.profiles?.city || "Surabaya";
+                      const isPending = tx.status === "pending";
+                      const isConfirmed = tx.status === "confirmed";
+                      const isRejected = tx.status === "rejected";
 
-                  {/* Mock item 2 */}
-                  <tr className="hover:bg-[#f8f9ff] transition-colors">
-                    <td className="py-3.5 pr-4 font-mono font-bold text-[#006c49]">RB-763412</td>
-                    <td className="py-3.5 pr-4 font-semibold text-[#0b1c30]">
-                      Brew & Co Manyar
-                      <span className="block text-[10px] text-[#6c7a71] font-normal">Manyar, Surabaya</span>
-                    </td>
-                    <td className="py-3.5 pr-4">
-                      <span className="px-2 py-0.5 rounded-md bg-[#e0f2fe] text-[#0369a1] font-semibold text-[10px]">
-                        Dijemput (3.2 km)
-                      </span>
-                    </td>
-                    <td className="py-3.5 pr-4 font-bold text-[#0b1c30]">5.0 kg</td>
-                    <td className="py-3.5 pr-4">
-                      <span className="px-2 py-0.5 rounded-full bg-[#dbeafe] text-[#1e40af] font-bold text-[10px]">
-                        Armada Menjemput
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-right">
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 rounded-lg border border-[#006c49] text-[#006c49] font-bold text-[11px] hover:bg-[#eff4ff] transition-colors"
-                      >
-                        Detail Armada
-                      </button>
-                    </td>
-                  </tr>
-
-                  {/* Mock item 3 */}
-                  <tr className="hover:bg-[#f8f9ff] transition-colors">
-                    <td className="py-3.5 pr-4 font-mono font-bold text-[#006c49]">RB-541908</td>
-                    <td className="py-3.5 pr-4 font-semibold text-[#0b1c30]">
-                      Kedai Kopi Titik Koma
-                      <span className="block text-[10px] text-[#6c7a71] font-normal">Rungkut, Surabaya</span>
-                    </td>
-                    <td className="py-3.5 pr-4">
-                      <span className="px-2 py-0.5 rounded-md bg-[#eff4ff] text-[#006c49] font-semibold text-[10px]">
-                        Drop Point (Hub)
-                      </span>
-                    </td>
-                    <td className="py-3.5 pr-4 font-bold text-[#0b1c30]">12.0 kg</td>
-                    <td className="py-3.5 pr-4">
-                      <span className="px-2 py-0.5 rounded-full bg-[#fef3c7] text-[#92400e] font-bold text-[10px]">
-                        Menunggu Timbang
-                      </span>
-                    </td>
-                    <td className="py-3.5 text-right">
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 rounded-lg bg-[#006c49] text-white font-bold text-[11px] hover:bg-[#005237] transition-colors shadow-2xs"
-                      >
-                        Timbang & Setujui
-                      </button>
-                    </td>
-                  </tr>
+                      return (
+                        <tr key={tx.id} className="hover:bg-[#f8f9ff] transition-colors">
+                          <td className="py-3.5 pr-4 font-mono font-bold text-[#006c49]">
+                            {tx.code || tx.id}
+                          </td>
+                          <td className="py-3.5 pr-4 font-semibold text-[#0b1c30]">
+                            {cafeName}
+                            <span className="block text-[10px] text-[#6c7a71] font-normal">{city}</span>
+                          </td>
+                          <td className="py-3.5 pr-4">
+                            <span
+                              className={`px-2 py-0.5 rounded-md font-semibold text-[10px] ${
+                                tx.method === "dijemput" || tx.type === "dijemput"
+                                  ? "bg-[#e0f2fe] text-[#0369a1]"
+                                  : "bg-[#eff4ff] text-[#006c49]"
+                              }`}
+                            >
+                              {tx.method === "dijemput" || tx.type === "dijemput"
+                                ? "Dijemput Armada"
+                                : "Drop Point"}
+                            </span>
+                          </td>
+                          <td className="py-3.5 pr-4 font-bold text-[#0b1c30]">
+                            {Number(tx.total_weight_kg || tx.total_weight || 0)} kg
+                          </td>
+                          <td className="py-3.5 pr-4">
+                            <span
+                              className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                                isPending
+                                  ? "bg-[#fef3c7] text-[#92400e]"
+                                  : isConfirmed
+                                  ? "bg-[#dcfce7] text-[#15803d]"
+                                  : "bg-[#fee2e2] text-[#991b1b]"
+                              }`}
+                            >
+                              {isPending ? "Menunggu Timbang" : isConfirmed ? "Terverifikasi" : "Ditolak"}
+                            </span>
+                          </td>
+                          <td className="py-3.5 text-right">
+                            <Link
+                              href={`/admin/verifikasi?ticket=${encodeURIComponent(tx.code || tx.id)}`}
+                              className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-colors shadow-2xs inline-block ${
+                                isPending
+                                  ? "bg-[#006c49] text-white hover:bg-[#005237]"
+                                  : "border border-[#bbcabf]/40 text-[#3c4a42] hover:bg-[#f8f9ff]"
+                              }`}
+                            >
+                              {isPending ? "Timbang & Setujui" : "Lihat Detail"}
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -297,7 +343,7 @@ export default async function AdminDashboardPage() {
               </div>
               <div>
                 <span className="text-xs font-bold text-[#0b1c30] block">Kelola Mitra Kafe</span>
-                <span className="text-[11px] text-[#6c7a71]">Tier langganan & status</span>
+                <span className="text-[11px] text-[#6c7a71]">{totalMitraCount} kafe terdaftar</span>
               </div>
             </Link>
 
@@ -310,7 +356,7 @@ export default async function AdminDashboardPage() {
               </div>
               <div>
                 <span className="text-xs font-bold text-[#0b1c30] block">Jadwal Armada</span>
-                <span className="text-[11px] text-[#6c7a71]">Rute kurir & BBM</span>
+                <span className="text-[11px] text-[#6c7a71]">Rute jemput kafe</span>
               </div>
             </Link>
 
@@ -358,47 +404,61 @@ export default async function AdminDashboardPage() {
               <div>
                 <div className="flex justify-between font-semibold mb-1">
                   <span className="text-[#3c4a42]">Plastic Cup (PP/PET):</span>
-                  <span className="font-bold text-[#0b1c30]">680 kg</span>
+                  <span className="font-bold text-[#0b1c30]">{cupPlastikKg.toFixed(1)} kg</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-[#f1f5f9] overflow-hidden">
-                  <div className="h-full bg-[#006c49] rounded-full" style={{ width: "68%" }} />
+                  <div
+                    className="h-full bg-[#006c49] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.round((cupPlastikKg / 800) * 100))}%` }}
+                  />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between font-semibold mb-1">
                   <span className="text-[#3c4a42]">Botol Plastik (PET Bening):</span>
-                  <span className="font-bold text-[#0b1c30]">420 kg</span>
+                  <span className="font-bold text-[#0b1c30]">{botolPlastikKg.toFixed(1)} kg</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-[#f1f5f9] overflow-hidden">
-                  <div className="h-full bg-[#0369a1] rounded-full" style={{ width: "42%" }} />
+                  <div
+                    className="h-full bg-[#0369a1] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.round((botolPlastikKg / 500) * 100))}%` }}
+                  />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between font-semibold mb-1">
                   <span className="text-[#3c4a42]">Ampas Kopi (Spent Grounds):</span>
-                  <span className="font-bold text-[#0b1c30]">210 kg</span>
+                  <span className="font-bold text-[#0b1c30]">{ampasKopiKg.toFixed(1)} kg</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-[#f1f5f9] overflow-hidden">
-                  <div className="h-full bg-[#d97706] rounded-full" style={{ width: "21%" }} />
+                  <div
+                    className="h-full bg-[#d97706] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.round((ampasKopiKg / 400) * 100))}%` }}
+                  />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between font-semibold mb-1">
                   <span className="text-[#3c4a42]">Kardus & Kaleng:</span>
-                  <span className="font-bold text-[#0b1c30]">110.5 kg</span>
+                  <span className="font-bold text-[#0b1c30]">{kardusKalengKg.toFixed(1)} kg</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-[#f1f5f9] overflow-hidden">
-                  <div className="h-full bg-[#64748b] rounded-full" style={{ width: "11%" }} />
+                  <div
+                    className="h-full bg-[#64748b] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.round((kardusKalengKg / 300) * 100))}%` }}
+                  />
                 </div>
               </div>
             </div>
 
             <div className="mt-4 pt-3 border-t border-[#bbcabf]/20 flex justify-between items-center text-xs font-bold">
               <span className="text-[#6c7a71]">Total Kapasitas Hub:</span>
-              <span className="text-[#006c49]">1.42 / 2.0 Ton (71%)</span>
+              <span className="text-[#006c49]">
+                {currentStockKg.toFixed(1)} / {hubCapacityKg} kg ({hubUsagePercent}%)
+              </span>
             </div>
           </div>
 

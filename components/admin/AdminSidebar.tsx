@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { signout } from "@/app/actions/auth";
@@ -13,10 +14,17 @@ export interface AdminSidebarProps {
     role: string;
     hubLocation?: string;
   };
+  notifications?: {
+    pendingTickets: number;
+    pendingPayouts: number;
+  };
 }
 
-export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin }) => {
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin, notifications }) => {
   const pathname = usePathname();
+
+  const pendingTickets = notifications?.pendingTickets ?? 0;
+  const pendingPayouts = notifications?.pendingPayouts ?? 0;
 
   const navItems = [
     {
@@ -29,7 +37,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin }) => {
       label: "Verifikasi Setoran",
       href: "/admin/verifikasi",
       icon: "fact_check",
-      badge: "Tiket",
+      badge: pendingTickets > 0 ? `${pendingTickets}` : undefined,
+      badgeColor: "bg-amber-500 text-white",
     },
     {
       label: "Penjualan Offtaker",
@@ -53,7 +62,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin }) => {
       label: "Approval Payout",
       href: "/admin/payout",
       icon: "payments",
-      badge: "Pending",
+      badge: pendingPayouts > 0 ? `${pendingPayouts}` : undefined,
+      badgeColor: "bg-amber-500 text-white",
     },
     {
       label: "Laporan ESG & Sertifikat",
@@ -67,18 +77,27 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin }) => {
     <aside className="flex flex-col h-full w-full bg-[#0b1c30] text-white select-none border-r border-[#1e3a5f]/40">
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-[#1e3a5f]/40">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#006c49] to-[#00a86b] text-white shadow-md shadow-[#006c49]/30">
-          <GoogleIcon name="shield" size={22} filled />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-base font-extrabold tracking-tight text-white">ReBrew</span>
-            <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-[#006c49] text-emerald-200 uppercase tracking-wider">
-              ADMIN
-            </span>
+        <Link href="/admin" className="flex items-center gap-3 min-w-0 group">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-md shadow-[#006c49]/30 group-hover:scale-105 transition-transform">
+            <Image
+              src="/logo-mark.png"
+              alt="ReBrew Logo"
+              width={32}
+              height={32}
+              className="h-7 w-7 object-contain"
+              priority
+            />
           </div>
-          <span className="text-[11px] text-[#94a3b8] truncate">Platform Control Center</span>
-        </div>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-extrabold tracking-tight text-white">ReBrew</span>
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#006c49] text-emerald-100 uppercase tracking-wider">
+                ADMIN
+              </span>
+            </div>
+            <span className="text-[11px] text-[#94a3b8] truncate">Platform Control Center</span>
+          </div>
+        </Link>
       </div>
 
       {/* Hub Location Badge */}

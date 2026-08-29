@@ -42,12 +42,16 @@ export function useDepositCalculator() {
     DROP_POINTS[0]?.id || "dp-central-hub-01"
   );
 
-  // State Jarak dan Alamat Penjemputan Armada ReBrew
+  // State Jarak, Jadwal, dan Alamat Penjemputan Armada ReBrew
   const [pickupDistance, setPickupDistance] = useState<number>(2.5); // Default 2.5 km (radius dekat)
   const [pickupAddress, setPickupAddress] = useState<string>(
     "Kopi Selamat Cafe, Jl. Raya Gubeng No. 18, Surabaya"
   );
   const [pickupNotes, setPickupNotes] = useState<string>("");
+  const [pickupDate, setPickupDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+  const [pickupTimeSlot, setPickupTimeSlot] = useState<string>("09:00 - 12:00 WIB");
 
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
   const [createdTicketCode, setCreatedTicketCode] = useState<string>("");
@@ -142,6 +146,8 @@ export function useDepositCalculator() {
         selectedDropPoint,
         pickupAddress,
         pickupNotes,
+        pickupDate,
+        pickupTimeSlot,
         totalWeight: summary.totalWeight,
         finalPoints: summary.finalPoints,
         totalCo2: summary.totalCo2,
@@ -172,16 +178,18 @@ export function useDepositCalculator() {
     setPickupAddress,
     pickupNotes,
     setPickupNotes,
+    pickupDate,
+    setPickupDate,
+    pickupTimeSlot,
+    setPickupTimeSlot,
     isSuccessModalOpen,
     setIsSuccessModalOpen,
-    createdTicketCode,
-    isSubmitting,
     summary,
     handleWeightChange,
     adjustWeight,
     resetWeights,
+    createdTicketCode,
+    isSubmitting,
     handleSubmit,
   };
 }
-
-

@@ -21,9 +21,9 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
   const filterTabs: { key: string; label: string; activeColor: string }[] = [
     { key: "all", label: "Semua", activeColor: "bg-[#006c49]" },
     { key: "cup_plastik", label: "Cup Plastik", activeColor: "bg-[#006c49]" },
-    { key: "botol_plastik", label: "Botol Plastik", activeColor: "bg-[#2b6954]" },
-    { key: "tutup_cup", label: "Tutup Cup", activeColor: "bg-[#55615f]" },
-    { key: "kardus", label: "Kardus", activeColor: "bg-[#d97706]" },
+    { key: "botol_plastik", label: "Botol Plastik", activeColor: "bg-[#006c49]" },
+    { key: "tutup_cup", label: "Tutup Cup", activeColor: "bg-[#006c49]" },
+    { key: "kardus", label: "Kardus", activeColor: "bg-[#006c49]" },
     { key: "kaleng", label: "Kaleng", activeColor: "bg-[#006c49]" },
   ];
 
@@ -52,8 +52,8 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
       aria-labelledby="recent-transactions-heading"
     >
       {/* Header & Filter Controls */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#bbcabf]/20 pb-5 w-full">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-[#bbcabf]/20 pb-5 w-full">
+        <div className="flex items-center gap-3 shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shrink-0 shadow-2xs">
             <GoogleIcon name="receipt_long" size={20} />
           </div>
@@ -65,13 +65,13 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
               Transaksi Daur Ulang
             </h2>
             <p className="text-xs sm:text-sm text-[#3c4a42] mt-0.5">
-              Riwayat setoran sampah (Maks. 5 item per halaman)
+              Riwayat setoran sampah
             </p>
           </div>
         </div>
 
-        {/* 5-Category Filter Tabs */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* 5-Category Filter Tabs - 1 Single Horizontal Row */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 shrink-0 max-w-full">
           {filterTabs.map((tab) => {
             const isActive = selectedCategory === tab.key;
             return (
@@ -79,7 +79,7 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
                 key={tab.key}
                 type="button"
                 onClick={() => handleCategoryChange(tab.key)}
-                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                   isActive
                     ? `${tab.activeColor} text-white shadow-xs`
                     : "bg-[#eff4ff] text-[#3c4a42] hover:bg-[#dce9ff] hover:text-[#006c49]"

@@ -19,7 +19,18 @@ export default async function RegisterPage({
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/dashboard");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const userRole = profile?.role || user.user_metadata?.role || "mitra";
+    if (userRole === "admin") {
+      redirect("/admin");
+    } else {
+      redirect("/dashboard");
+    }
   }
 
   const { error } = await searchParams;

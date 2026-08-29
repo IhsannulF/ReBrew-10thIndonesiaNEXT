@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   PayoutFormData,
   PayoutTransaction,
@@ -6,15 +6,34 @@ import {
 } from "@/types/payout";
 import {
   PAYMENT_CHANNELS,
-  INITIAL_PAYOUT_HISTORY,
   COIN_RATE,
   MIN_WITHDRAW_POINTS,
 } from "@/constants/payoutData";
+import { requestPayout } from "@/app/actions/payouts";
 
-export function usePayout(initialBalance: number = 1480) {
+interface UsePayoutProps {
+  initialBalance?: number;
+  initialHistory?: PayoutTransaction[];
+  initialUserName?: string;
+}
+
+export function usePayout({
+  initialBalance = 0,
+  initialHistory = [],
+  initialUserName = "Mitra ReBrew",
+}: UsePayoutProps = {}) {
   const [balancePoints, setBalancePoints] = useState<number>(initialBalance);
-  const [payoutHistory, setPayoutHistory] = useState<PayoutTransaction[]>(INITIAL_PAYOUT_HISTORY);
+  const [payoutHistory, setPayoutHistory] = useState<PayoutTransaction[]>(initialHistory);
   
+  // Sync state when initialBalance or initialHistory changes
+  useEffect(() => {
+    setBalancePoints(initialBalance);
+  }, [initialBalance]);
+
+  useEffect(() => {
+    setPayoutHistory(initialHistory);
+  }, [initialHistory]);
+
   // Active payout after submission (to show real-time status and estimated arrival)
   const [activePayout, setActivePayout] = useState<PayoutTransaction | null>(null);
 
@@ -22,12 +41,14 @@ export function usePayout(initialBalance: number = 1480) {
   const [formData, setFormData] = useState<PayoutFormData>({
     channelId: PAYMENT_CHANNELS[0].id,
     accountNumber: "",
-    accountHolderName: "Budi Santoso",
-    pointsToWithdraw: 500,
+    accountHolderName: initialUserName || "Mitra ReBrew",
+    pointsToWithdraw: initialBalance >= MIN_WITHDRAW_POINTS ? Math.min(500, initialBalance) : 0,
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
 
   // Selected Payment Channel
   const selectedChannel = useMemo<PaymentChannel>(() => {
@@ -47,6 +68,7 @@ export function usePayout(initialBalance: number = 1480) {
   const setChannelId = (channelId: string) => {
     setFormData((prev) => ({ ...prev, channelId }));
     setFormErrors((prev) => ({ ...prev, channelId: "" }));
+    setGeneralError(null);
   };
 
   const setAccountNumber = (accountNumber: string) => {
@@ -54,17 +76,20 @@ export function usePayout(initialBalance: number = 1480) {
     const cleanNumber = accountNumber.replace(/\D/g, "");
     setFormData((prev) => ({ ...prev, accountNumber: cleanNumber }));
     setFormErrors((prev) => ({ ...prev, accountNumber: "" }));
+    setGeneralError(null);
   };
 
   const setAccountHolderName = (accountHolderName: string) => {
     setFormData((prev) => ({ ...prev, accountHolderName }));
     setFormErrors((prev) => ({ ...prev, accountHolderName: "" }));
+    setGeneralError(null);
   };
 
   const setPointsToWithdraw = (points: number) => {
     const validPoints = Math.max(0, Math.min(balancePoints, Math.floor(points)));
     setFormData((prev) => ({ ...prev, pointsToWithdraw: validPoints }));
     setFormErrors((prev) => ({ ...prev, pointsToWithdraw: "" }));
+    setGeneralError(null);
   };
 
   const setPresetPercentage = (percentage: number) => {
@@ -73,8 +98,9 @@ export function usePayout(initialBalance: number = 1480) {
   };
 
   // Submit Handler
-  const handleSubmitPayout = (e: React.FormEvent) => {
+  const handleSubmitPayout = async (e: React.FormEvent) => {
     e.preventDefault();
+    setGeneralError(null);
     const errors: Record<string, string> = {};
 
     if (!formData.accountNumber || formData.accountNumber.length < 5) {
@@ -92,7 +118,7 @@ export function usePayout(initialBalance: number = 1480) {
     }
 
     if (formData.pointsToWithdraw > balancePoints) {
-      errors.pointsToWithdraw = "Jumlah poin melebihi saldo aktif Anda.";
+      errors.pointsToWithdraw = `Jumlah poin melebihi saldo aktif Anda (${balancePoints.toLocaleString("id-ID")} poin).`;
     }
 
     if (Object.keys(errors).length > 0) {
@@ -102,44 +128,34 @@ export function usePayout(initialBalance: number = 1480) {
 
     setIsSubmitting(true);
 
-    // Simulate instant secure processing
-    setTimeout(() => {
-      const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-      const newPayout: PayoutTransaction = {
-        id: `WD-${randomSuffix}`,
-        date: "Hari ini",
-        time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB",
-        fullDate: new Date().toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }) + `, ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB`,
-        channelName: selectedChannel.name,
-        channelType: selectedChannel.type,
-        accountNumber: formData.accountNumber,
-        accountHolderName: formData.accountHolderName,
-        pointsDeducted: formData.pointsToWithdraw,
-        amountIdr: calculatedAmountIdr,
-        adminFeeIdr,
-        netAmountIdr,
-        status: "processing",
-        estimatedArrival: "Hari ini, dalam 1-15 menit (Maks. 1x24 jam kerja)",
-      };
+    try {
+      // Panggil Server Action ke database Supabase
+      const result = await requestPayout(formData);
 
-      // Deduct balance
-      setBalancePoints((prev) => prev - formData.pointsToWithdraw);
-      
-      // Update history and set active payout
-      setPayoutHistory((prev) => [newPayout, ...prev]);
-      setActivePayout(newPayout);
-      setIsSubmitting(false);
+      if (!result.success || !result.payout) {
+        setGeneralError(result.error || "Terjadi kesalahan saat memproses penarikan.");
+        setIsSubmitting(false);
+        return;
+      }
 
-      // Reset points field to default
+      // Update Saldo Poin lokal & riwayat dari respons database
+      const newBalance = result.newBalance !== undefined ? result.newBalance : Math.max(0, balancePoints - formData.pointsToWithdraw);
+      setBalancePoints(newBalance);
+      setPayoutHistory((prev) => [result.payout!, ...prev]);
+      setActivePayout(result.payout);
+      setSuccessToast(`Pengajuan pencairan Rp ${result.payout.netAmountIdr.toLocaleString("id-ID")} berhasil dikirim ke database!`);
+
+      // Reset form points
       setFormData((prev) => ({
         ...prev,
-        pointsToWithdraw: Math.min(200, balancePoints - formData.pointsToWithdraw),
+        pointsToWithdraw: newBalance >= MIN_WITHDRAW_POINTS ? Math.min(200, newBalance) : 0,
       }));
-    }, 600);
+    } catch (err: any) {
+      console.error("Payout error:", err);
+      setGeneralError("Gagal terhubung ke database. Silakan coba kembali.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResetActivePayout = () => {
@@ -151,6 +167,8 @@ export function usePayout(initialBalance: number = 1480) {
     maxCashIdr,
     formData,
     formErrors,
+    generalError,
+    successToast,
     isSubmitting,
     selectedChannel,
     calculatedAmountIdr,

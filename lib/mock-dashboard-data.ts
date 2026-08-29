@@ -32,9 +32,9 @@ export const initialDashboardData: DashboardData = {
     scaleStatus: "online",
     scaleModel: "ReBrew IoT Scale v2.4 (Bluetooth BLE & WiFi)",
     scaleLastSync: "2 menit lalu",
-    nextPickupDate: "Kamis, 28 Agu 2026",
-    nextPickupTime: "10:00 WIB",
-    collectorName: "ReBrew Driver #04 (Deni)",
+    nextPickupDate: "Belum Ada Jadwal",
+    nextPickupTime: "",
+    collectorName: "ReBrew Micro-Hub Surabaya",
     collectorPhone: "0812-3456-7890",
   },
   notification: {

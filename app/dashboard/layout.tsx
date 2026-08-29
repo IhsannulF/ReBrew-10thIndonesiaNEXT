@@ -1,5 +1,6 @@
 import React from "react";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -15,52 +16,57 @@ export default async function DashboardLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // If user is not logged in, redirect to login page
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Check role from profiles table
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, cafe_name, tier, saldo_poin, total_kg, role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const userRole = profile?.role || user.user_metadata?.role || "mitra";
+
+  // Role Security Guard: Admin must NOT view or access the user dashboard
+  if (userRole === "admin") {
+    redirect("/admin");
+  }
+
   // Default fallback
-  let userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mitra ReBrew";
-  let cafeName = user?.user_metadata?.cafe_name || "Kedai Kopi Mitra";
+  let userName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Mitra ReBrew";
+  let cafeName = profile?.cafe_name || user.user_metadata?.cafe_name || "Kedai Kopi Mitra";
   let tierName = "";
-  let saldoPoin = 0;
+  let saldoPoin = Number(profile?.saldo_poin || 0);
 
-  if (user?.id) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, cafe_name, tier, saldo_poin, total_kg")
-      .eq("id", user.id)
-      .maybeSingle();
+  const { data: userBadges } = await supabase
+    .from("user_badges")
+    .select("badge_id, eco_badges(name)")
+    .eq("user_id", user.id);
 
-    const { data: userBadges } = await supabase
-      .from("user_badges")
-      .select("badge_id, eco_badges(name)")
-      .eq("user_id", user.id);
+  const badgeIds = (userBadges || []).map((b: any) => b.badge_id);
 
-    const badgeIds = (userBadges || []).map((b: any) => b.badge_id);
-
-    if (profile) {
-      if (profile.full_name) userName = profile.full_name;
-      if (profile.cafe_name) cafeName = profile.cafe_name;
-      if (profile.saldo_poin !== null && profile.saldo_poin !== undefined) {
-        saldoPoin = Number(profile.saldo_poin);
-      }
-
-      if (profile.tier === "enterprise") {
-        tierName = "Enterprise 🏆";
-      } else if (badgeIds.includes("bdg-4")) {
-        tierName = "Zero Waste Hero 🏆";
-      } else if (badgeIds.includes("bdg-3")) {
-        tierName = "Plastic Warrior 🛡️";
-      } else if (badgeIds.includes("bdg-2")) {
-        tierName = "1 Ton Club Contender ⭐";
-      } else if (badgeIds.includes("bdg-1")) {
-        tierName = "Eco Partner ⭐";
-      } else {
-        tierName = ""; // Belum mendapatkan badge -> tidak ada badge
-      }
+  if (profile) {
+    if (profile.tier === "enterprise") {
+      tierName = "Enterprise 🏆";
+    } else if (badgeIds.includes("bdg-4")) {
+      tierName = "Zero Waste Hero 🏆";
+    } else if (badgeIds.includes("bdg-3")) {
+      tierName = "Plastic Warrior 🛡️";
+    } else if (badgeIds.includes("bdg-2")) {
+      tierName = "1 Ton Club Contender ⭐";
+    } else if (badgeIds.includes("bdg-1")) {
+      tierName = "Eco Partner ⭐";
+    } else {
+      tierName = "";
     }
   }
 
   const userProfile = {
     name: userName,
-    email: user?.email || "mitra@rebrew.id",
+    email: user.email || "mitra@rebrew.id",
     cafeName: cafeName,
     tier: tierName,
     balanceCoins: saldoPoin,

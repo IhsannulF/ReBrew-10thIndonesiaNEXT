@@ -16,6 +16,10 @@ export interface DepositMethodSelectorProps {
   setPickupAddress: (addr: string) => void;
   pickupNotes: string;
   setPickupNotes: (notes: string) => void;
+  pickupDate?: string;
+  setPickupDate?: (date: string) => void;
+  pickupTimeSlot?: string;
+  setPickupTimeSlot?: (slot: string) => void;
   summary: DepositSummary;
 }
 
@@ -55,6 +59,10 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
   setPickupAddress,
   pickupNotes,
   setPickupNotes,
+  pickupDate = new Date().toISOString().split("T")[0],
+  setPickupDate,
+  pickupTimeSlot = "09:00 - 12:00 WIB",
+  setPickupTimeSlot,
   summary,
 }) => {
   const [showFormulaModal, setShowFormulaModal] = useState(false);
@@ -408,6 +416,68 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Jadwal Penjemputan Armada */}
+              <div className="flex flex-col gap-3 p-3 rounded-2xl bg-[#f8f9ff] border border-[#bbcabf]/30">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#0b1c30] flex items-center gap-1.5">
+                    <GoogleIcon name="calendar_today" size={15} className="text-[#006c49]" />
+                    Pilih Jadwal Penjemputan:
+                  </label>
+                  <span className="text-[10px] font-bold text-[#006c49] bg-[#eff4ff] px-2 py-0.5 rounded-md">
+                    Wajib Tepat Waktu
+                  </span>
+                </div>
+
+                {/* Date Input */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] text-[#3c4a42] font-semibold">Tanggal Jemput:</span>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={pickupDate}
+                    onChange={(e) => setPickupDate && setPickupDate(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-[#bbcabf]/40 bg-white text-[#0b1c30] focus:ring-1 focus:ring-[#006c49] outline-none"
+                  />
+                </div>
+
+                {/* Time Slot Chips */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] text-[#3c4a42] font-semibold">Slot Jam Penjemputan:</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { slot: "09:00 - 12:00 WIB", label: "Pagi", time: "09:00 - 12:00" },
+                      { slot: "13:00 - 15:00 WIB", label: "Siang", time: "13:00 - 15:00" },
+                      { slot: "15:00 - 18:00 WIB", label: "Sore", time: "15:00 - 18:00" },
+                    ].map((item) => {
+                      const isSelected = pickupTimeSlot === item.slot;
+                      return (
+                        <button
+                          key={item.slot}
+                          type="button"
+                          onClick={() => setPickupTimeSlot && setPickupTimeSlot(item.slot)}
+                          className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#006c49] text-white border-[#006c49] shadow-2xs font-bold"
+                              : "bg-white text-[#3c4a42] border-[#bbcabf]/40 hover:bg-[#eff4ff]"
+                          }`}
+                        >
+                          <div className="text-[11px] font-bold">{item.label}</div>
+                          <div className="text-[9px] opacity-90">{item.time}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Auto-Reject Policy Warning Notice */}
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-[#fff4e5] border border-[#ff9800]/30 text-[11px] text-[#92400e]">
+                  <GoogleIcon name="timer" size={16} className="text-[#d97706] shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <strong>Ketentuan Kedaluwarsa Otomatis:</strong> Jika penjemputan belum selesai hingga batas jam slot jadwal berakhir, sistem akan <strong>otomatis menolak/membatalkan</strong> tiket penjemputan.
+                  </div>
+                </div>
+              </div>
 
               {/* Input Alamat & Catatan */}
               <div className="flex flex-col gap-2">

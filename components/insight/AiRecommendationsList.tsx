@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { AiRecommendation, RecommendationCategory } from "@/types/insight";
@@ -18,20 +18,29 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
   onSelectCategory,
   totalCount,
 }) => {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   const categoryFilters: { key: "all" | RecommendationCategory; label: string }[] = [
-    { key: "all", label: "Semua Rekomendasi" },
+    { key: "all", label: "Semua" },
     { key: "sorting_efficiency", label: "Pemilahan" },
-    { key: "green_branding", label: "Branding Gen-Z" },
+    { key: "upcycling_revenue", label: "Upcycling & Kas" },
+    { key: "green_branding", label: "Branding Hijau" },
     { key: "logistics_saving", label: "Logistik" },
-    { key: "upcycling_revenue", label: "Upcycling" },
   ];
+
+  const getActionHref = (rec: AiRecommendation) => {
+    if (rec.actionHref) return rec.actionHref;
+    if (rec.category === "upcycling_revenue") return "/dashboard/saldo";
+    if (rec.category === "sorting_efficiency" || rec.category === "logistics_saving") return "/dashboard/setor";
+    return "/dashboard/riwayat";
+  };
 
   return (
     <div className="flex flex-col gap-5 rounded-3xl border border-[#bbcabf]/30 bg-white p-6 sm:p-7 shadow-xs w-full">
       {/* Header & Filter Chips */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#bbcabf]/20 pb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 border-b border-[#bbcabf]/20 pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49]">
             <GoogleIcon name="tips_and_updates" size={22} />
           </div>
           <div>
@@ -39,13 +48,13 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
               Rekomendasi Strategis AI
             </h2>
             <p className="text-xs text-[#3c4a42] mt-0.5">
-              Langkah aksi nyata untuk menaikkan perolehan koin dan skor green branding
+              Langkah aksi nyata rekomendasi Google Gemini untuk mengoptimalkan perolehan koin dan green branding
             </p>
           </div>
         </div>
 
-        {/* Filter Category Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        {/* Filter Category Chips - Single Line Clean Row */}
+        <div className="flex items-center gap-1.5 shrink-0 flex-nowrap overflow-hidden">
           {categoryFilters.map((tab) => {
             const isActive = selectedCategory === tab.key;
             return (
@@ -53,7 +62,7 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
                 key={tab.key}
                 type="button"
                 onClick={() => onSelectCategory(tab.key)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                   isActive
                     ? "bg-[#006c49] text-white shadow-2xs"
                     : "bg-[#f8f9ff] text-[#3c4a42] border border-[#bbcabf]/30 hover:bg-[#eff4ff] hover:text-[#006c49]"
@@ -70,6 +79,7 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {recommendations.map((rec) => {
           const isHighPriority = rec.priority === "high";
+          const isExpanded = expandedId === rec.id;
 
           return (
             <div
@@ -80,7 +90,7 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49]">
-                    <GoogleIcon name={rec.icon} size={20} />
+                    <GoogleIcon name={rec.icon || "auto_awesome"} size={20} />
                   </div>
                   <div>
                     <span className="text-[11px] font-bold text-[#006c49] uppercase tracking-wider block">
@@ -93,7 +103,7 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
                 </div>
 
                 {isHighPriority && (
-                  <span className="text-[10px] font-bold bg-[#fff8e1] text-[#92400e] border border-[#fde68a] px-2 py-0.5 rounded-full shrink-0">
+                  <span className="text-[10px] font-bold bg-[#fff8e1] text-[#92400e] border border-[#fde68a] px-2.5 py-0.5 rounded-full shrink-0">
                     Prioritas Tinggi
                   </span>
                 )}
@@ -104,6 +114,23 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
                 {rec.description}
               </p>
 
+              {/* Optional Action Steps List */}
+              {rec.actionSteps && rec.actionSteps.length > 0 && (
+                <div className="rounded-xl bg-white p-3 border border-[#bbcabf]/20 text-xs">
+                  <span className="font-bold text-[#0b1c30] block mb-1.5 text-[11px]">
+                    Langkah Eksekusi di Kafe:
+                  </span>
+                  <ul className="flex flex-col gap-1 text-[#3c4a42] text-[11px]">
+                    {rec.actionSteps.map((step, sIdx) => (
+                      <li key={sIdx} className="flex items-start gap-1.5">
+                        <span className="font-bold text-[#006c49]">{sIdx + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Footer Impact & Action */}
               <div className="flex items-center justify-between pt-3 border-t border-[#bbcabf]/20 gap-2">
                 <span className="text-xs font-bold text-[#006c49] flex items-center gap-1">
@@ -112,7 +139,7 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
                 </span>
 
                 <Link
-                  href="/dashboard/setor"
+                  href={getActionHref(rec)}
                   className="inline-flex items-center gap-1 text-xs font-bold text-[#006c49] hover:underline"
                 >
                   <span>{rec.actionText}</span>

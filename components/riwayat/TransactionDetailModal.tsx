@@ -46,11 +46,17 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           icon: "schedule",
         };
       case "rejected":
+        const isScheduleExpired =
+          tx.isExpired || (tx.notes || "").toLowerCase().includes("melewati batas");
         return {
-          title: "Setoran Ditolak",
-          desc: tx.notes || "Material sampah tidak memenuhi kriteria penerimaan daur ulang ReBrew.",
+          title: isScheduleExpired ? "Penjemputan Ditolak (Kedaluwarsa)" : "Setoran Ditolak",
+          desc:
+            tx.notes ||
+            (isScheduleExpired
+              ? "Penjemputan otomatis dibatalkan/ditolak karena telah melewati batas jadwal waktu yang ditentukan tanpa penyerahan limbah."
+              : "Material sampah tidak memenuhi kriteria penerimaan daur ulang ReBrew."),
           badgeColor: "bg-[#ffdad6]/60 text-[#ba1a1a] border-[#ffdad6]",
-          icon: "cancel",
+          icon: isScheduleExpired ? "timer_off" : "cancel",
         };
     }
   };
@@ -231,19 +237,19 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex items-center gap-3 p-5 bg-[#f8f9ff] border-t border-[#bbcabf]/30">
+        {/* Footer Actions (Disembunyikan saat Cetak / Simpan PDF) */}
+        <div className="flex items-center gap-3 p-5 bg-[#f8f9ff] border-t border-[#bbcabf]/30 print:hidden">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl border border-[#bbcabf]/40 text-xs font-bold text-[#0b1c30] hover:bg-white transition-colors"
+            className="flex-1 py-3 rounded-xl border border-[#bbcabf]/40 text-xs font-bold text-[#0b1c30] hover:bg-white transition-colors cursor-pointer"
           >
             Tutup
           </button>
           <button
             type="button"
             onClick={() => window.print()}
-            className="flex-1 py-3 rounded-xl bg-[#006c49] text-white text-xs font-bold hover:bg-[#2b6954] transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+            className="flex-1 py-3 rounded-xl bg-[#006c49] text-white text-xs font-bold hover:bg-[#2b6954] transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
           >
             <GoogleIcon name="print" size={16} />
             <span>Cetak / Simpan Tiket</span>

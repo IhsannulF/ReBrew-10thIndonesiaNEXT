@@ -18,6 +18,7 @@ export interface AiRecommendation {
   priority: RecommendationPriority;
   actionText: string;
   actionHref?: string;
+  actionSteps?: string[];
 }
 
 export interface WasteProjection {
@@ -31,14 +32,6 @@ export interface WasteProjection {
   trendPercentage: number; // e.g. +18%
 }
 
-export interface ChatMessage {
-  id: string;
-  sender: "user" | "ai";
-  text: string;
-  timestamp: string;
-  suggestedActions?: { label: string; action: () => void }[];
-}
-
 export interface EcoScoreMetrics {
   overallScore: number; // 0 - 100
   scoreLabel: string;
@@ -46,4 +39,19 @@ export interface EcoScoreMetrics {
   sortedRatioPercent: number;
   cleanlinessScore: number;
   pickupEfficiencyScore: number;
+}
+
+export interface AiDiagnosticAnalysis {
+  executiveSummary: string;
+  wasteHighlights: string[];
+  revenueOpportunities: string[];
+  esgReadiness: string;
+  lastGeneratedAt?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: "user" | "ai";
+  text: string;
+  timestamp: string;
 }

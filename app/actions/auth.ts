@@ -98,6 +98,8 @@ export async function signup(formData: FormData) {
       friendlyError = 'Email sudah terdaftar. Silakan gunakan menu Masuk.'
     } else if (error.message.includes('email rate limit exceeded') || error.message.includes('over_email_send_rate_limit')) {
       friendlyError = 'Supabase Email Rate Limit tercapai. Solusi: Di Supabase Dashboard, buka Authentication > Providers > Email, lalu matikan "Confirm email" agar pendaftaran langsung aktif.'
+    } else if (error.message.includes('Database error saving new user')) {
+      friendlyError = 'Gagal menyimpan profil ke database Supabase. Silakan jalankan script SQL migrasi "20260827000001_fix_auth_profiles_trigger.sql" di Supabase SQL Editor.'
     }
     redirect(`/daftar?error=${encodeURIComponent(friendlyError)}`)
   }
@@ -139,7 +141,7 @@ export async function signup(formData: FormData) {
   if (data?.session) {
     redirect('/dashboard')
   } else {
-    redirect(`/login?message=${encodeURIComponent('Pendaftaran mitra berhasil! Akun Anda telah siap, silakan masuk.')}`)
+    redirect(`/login?message=${encodeURIComponent('Pendaftaran mitra berhasil! Tautan konfirmasi telah dikirim ke email Anda. Silakan buka email dan konfirmasi akun Anda terlebih dahulu sebelum masuk.')}`)
   }
 }
 

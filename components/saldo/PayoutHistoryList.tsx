@@ -64,65 +64,77 @@ export const PayoutHistoryList: React.FC<PayoutHistoryListProps> = ({ history })
       </div>
 
       {/* List */}
-      <div className="divide-y divide-[#bbcabf]/20">
-        {paginatedHistory.map((item) => {
-          const chip = getStatusChip(item.status);
-          const maskedAcc =
-            item.accountNumber.length > 4
-              ? "•••• " + item.accountNumber.slice(-4)
-              : item.accountNumber;
+      {history.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eff4ff] text-[#006c49] mb-3">
+            <GoogleIcon name="payments" size={28} />
+          </div>
+          <h3 className="text-sm font-bold text-[#0b1c30]">Belum Ada Riwayat Penarikan</h3>
+          <p className="text-xs text-[#6c7a71] max-w-xs mt-1">
+            Kumpulkan poin dari setoran sampah kafe Anda dan ajukan pencairan ke rekening atau e-wallet.
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-[#bbcabf]/20">
+          {paginatedHistory.map((item) => {
+            const chip = getStatusChip(item.status);
+            const maskedAcc =
+              item.accountNumber.length > 4
+                ? "•••• " + item.accountNumber.slice(-4)
+                : item.accountNumber;
 
-          return (
-            <div
-              key={item.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 px-2 hover:bg-[#f8f9ff] rounded-2xl transition-colors"
-            >
-              {/* Left Details */}
-              <div className="flex items-start gap-3.5 min-w-0">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shadow-2xs">
-                  <GoogleIcon
-                    name={item.channelType === "bank" ? "account_balance" : "account_balance_wallet"}
-                    size={22}
-                  />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-[#0b1c30]">{item.channelName}</span>
-                    <span className="text-xs font-mono font-semibold text-[#6c7a71]">
-                      ({maskedAcc})
-                    </span>
-                    <span className="font-mono text-[11px] font-bold text-[#006c49] bg-[#eff4ff] px-2 py-0.5 rounded border border-[#adedd3]">
-                      {item.id}
-                    </span>
+            return (
+              <div
+                key={item.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 px-2 hover:bg-[#f8f9ff] rounded-2xl transition-colors"
+              >
+                {/* Left Details */}
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shadow-2xs">
+                    <GoogleIcon
+                      name={item.channelType === "bank" ? "account_balance" : "account_balance_wallet"}
+                      size={22}
+                    />
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[#6c7a71] mt-1">
-                    <span>{item.date} • {item.time}</span>
-                    <span>•</span>
-                    <span className="text-[#d97706] font-semibold">-{item.pointsDeducted} Poin</span>
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-[#0b1c30]">{item.channelName}</span>
+                      <span className="text-xs font-mono font-semibold text-[#6c7a71]">
+                        ({maskedAcc})
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-[#006c49] bg-[#eff4ff] px-2 py-0.5 rounded border border-[#adedd3]">
+                        {item.id}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-[#6c7a71] mt-1">
+                      <span>{item.date} • {item.time}</span>
+                      <span>•</span>
+                      <span className="text-[#d97706] font-semibold">-{item.pointsDeducted} Poin</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Status & Amount */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-2">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs ${chip.bg}`}
+                  >
+                    <GoogleIcon name={chip.icon} size={14} filled />
+                    <span>{chip.label}</span>
+                  </span>
+
+                  <div className="text-right">
+                    <div className="text-sm font-bold font-mono text-[#006c49]">
+                      +Rp {item.netAmountIdr.toLocaleString("id-ID")}
+                    </div>
+                    <div className="text-[10px] text-[#6c7a71]">Bebas Biaya Admin</div>
                   </div>
                 </div>
               </div>
-
-              {/* Right Status & Amount */}
-              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-2">
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs ${chip.bg}`}
-                >
-                  <GoogleIcon name={chip.icon} size={14} filled />
-                  <span>{chip.label}</span>
-                </span>
-
-                <div className="text-right">
-                  <div className="text-sm font-bold font-mono text-[#006c49]">
-                    +Rp {item.netAmountIdr.toLocaleString("id-ID")}
-                  </div>
-                  <div className="text-[10px] text-[#6c7a71]">Bebas Biaya Admin</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Pagination Controls */}
       {totalPages > 1 && (

@@ -12,10 +12,15 @@ import {
 } from "@/types/dashboard";
 import { initialDashboardData } from "@/lib/mock-dashboard-data";
 import { calculateCO2Savings, coinsToIdr } from "@/lib/dashboard-utils";
+import { autoRejectExpiredPickups } from "@/app/actions/transactions";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+  
+  // Auto-reject any expired pickups across the platform
+  await autoRejectExpiredPickups(supabase);
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -195,6 +200,7 @@ export default async function DashboardPage() {
           id,
           method,
           pickup_address,
+          notes,
           total_weight_kg,
           total_points,
           total_co2_kg,
@@ -223,6 +229,7 @@ export default async function DashboardPage() {
 
       let lastScaleModel = "ReBrew Smart Scale v2.4 (BLE/WiFi)";
       let nextPickupScheduleDate = "";
+      let nextPickupScheduleTime = "";
       let nextPickupCollector = "ReBrew Micro-Hub Surabaya Timur";
 
       if (dbTransactions && dbTransactions.length > 0) {
@@ -302,11 +309,18 @@ export default async function DashboardPage() {
 
         // Check for pending pickup schedule
         const pendingPickupTx = dbTransactions.find(
-          (tx: any) => tx.method === "dijemput" && tx.status === "pending"
+          (tx: any) => (tx.method === "dijemput" || tx.type === "dijemput") && tx.status === "pending"
         );
         if (pendingPickupTx) {
-          nextPickupScheduleDate = "Menunggu Penjemputan Armada";
-          nextPickupCollector = pendingPickupTx.collector_name || "ReBrew Driver #04 (Deni)";
+          nextPickupScheduleDate = "Menunggu Penjemputan";
+          if (pendingPickupTx.notes) {
+            const scheduleMatch = pendingPickupTx.notes.match(/Jadwal Jemput:\s*([^\(]+)\s*\(([^)]+)\)/);
+            if (scheduleMatch) {
+              nextPickupScheduleDate = scheduleMatch[1].trim();
+              nextPickupScheduleTime = scheduleMatch[2].trim();
+            }
+          }
+          nextPickupCollector = pendingPickupTx.collector_name || "Armada ReBrew (Driver Penjemput)";
         }
 
         // 4. Calculate Live Waste Composition from transaction_items
@@ -406,8 +420,8 @@ export default async function DashboardPage() {
         scaleStatus: "online",
         scaleModel: lastScaleModel,
         scaleLastSync: "Terkoneksi (Aktif)",
-        nextPickupDate: nextPickupScheduleDate || (totalKg > 0 ? "Kamis, 28 Agu 2026" : "Belum Ada Jadwal"),
-        nextPickupTime: nextPickupScheduleDate ? "10:00 WIB" : (totalKg > 0 ? "10:00 WIB" : ""),
+        nextPickupDate: nextPickupScheduleDate || "Belum Ada Jadwal",
+        nextPickupTime: nextPickupScheduleTime,
         collectorName: nextPickupCollector,
         collectorPhone: "0812-3456-7890",
       };

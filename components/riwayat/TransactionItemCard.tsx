@@ -32,10 +32,12 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
           label: "Menunggu Timbang",
         };
       case "rejected":
+        const isScheduleExpired =
+          tx.isExpired || (tx.notes || "").toLowerCase().includes("melewati batas");
         return {
           bg: "bg-[#ffdad6]/50 text-[#ba1a1a] border-[#ffdad6]",
-          icon: "cancel",
-          label: "Ditolak",
+          icon: isScheduleExpired ? "timer_off" : "cancel",
+          label: isScheduleExpired ? "Ditolak (Lewat Jadwal)" : "Ditolak",
         };
     }
   };

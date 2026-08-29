@@ -8,6 +8,7 @@ import { PAYMENT_CHANNELS, MIN_WITHDRAW_POINTS, COIN_RATE } from "@/constants/pa
 interface PayoutFormProps {
   formData: PayoutFormData;
   formErrors: Record<string, string>;
+  generalError?: string | null;
   isSubmitting: boolean;
   selectedChannel: PaymentChannel;
   balancePoints: number;
@@ -25,6 +26,7 @@ interface PayoutFormProps {
 export const PayoutForm: React.FC<PayoutFormProps> = ({
   formData,
   formErrors,
+  generalError,
   isSubmitting,
   selectedChannel,
   balancePoints,
@@ -61,6 +63,13 @@ export const PayoutForm: React.FC<PayoutFormProps> = ({
           </div>
         </div>
       </div>
+
+      {generalError && (
+        <div className="p-3.5 rounded-2xl bg-[#ffdad6]/40 border border-[#ba1a1a]/30 text-xs text-[#ba1a1a] font-semibold flex items-center gap-2">
+          <GoogleIcon name="error" size={18} />
+          <span>{generalError}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Kolom Kiri: Input Detail Rekening */}
