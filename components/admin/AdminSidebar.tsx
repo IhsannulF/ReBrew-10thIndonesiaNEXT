@@ -18,9 +18,14 @@ export interface AdminSidebarProps {
     pendingTickets: number;
     pendingPayouts: number;
   };
+  onClose?: () => void;
 }
 
-export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin, notifications }) => {
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({
+  admin,
+  notifications,
+  onClose,
+}) => {
   const pathname = usePathname();
 
   const pendingTickets = notifications?.pendingTickets ?? 0;
@@ -76,8 +81,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin, notifications
   return (
     <aside className="flex flex-col h-full w-full bg-[#0b1c30] text-white select-none border-r border-[#1e3a5f]/40">
       {/* Brand Header */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-[#1e3a5f]/40">
-        <Link href="/admin" className="flex items-center gap-3 min-w-0 group">
+      <div className="flex items-center justify-between px-5 py-5 border-b border-[#1e3a5f]/40">
+        <Link
+          href="/admin"
+          onClick={onClose}
+          className="flex items-center gap-3 min-w-0 group"
+        >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-md shadow-[#006c49]/30 group-hover:scale-105 transition-transform">
             <Image
               src="/logo-mark.png"
@@ -90,22 +99,45 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin, notifications
           </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-base font-extrabold tracking-tight text-white">ReBrew</span>
+              <span className="text-base font-extrabold tracking-tight text-white">
+                ReBrew
+              </span>
               <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#006c49] text-emerald-100 uppercase tracking-wider">
                 ADMIN
               </span>
             </div>
-            <span className="text-[11px] text-[#94a3b8] truncate">Platform Control Center</span>
+            <span className="text-[11px] text-[#94a3b8] truncate">
+              Platform Control Center
+            </span>
           </div>
         </Link>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup Menu"
+            className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg bg-[#132842] text-[#94a3b8] hover:text-white"
+          >
+            <GoogleIcon name="close" size={18} />
+          </button>
+        )}
       </div>
 
       {/* Hub Location Badge */}
       <div className="px-4 py-2.5 mx-3 mt-3 rounded-xl bg-[#132842] border border-[#1e3a5f]/60 flex items-center gap-2">
-        <GoogleIcon name="location_on" size={16} className="text-[#00a86b] shrink-0" />
+        <GoogleIcon
+          name="location_on"
+          size={16}
+          className="text-[#00a86b] shrink-0"
+        />
         <div className="flex flex-col min-w-0">
-          <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">Central Micro-Hub</span>
-          <span className="text-xs font-semibold text-white truncate">Surabaya Timur</span>
+          <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
+            Central Micro-Hub
+          </span>
+          <span className="text-xs font-semibold text-white truncate">
+            Surabaya Timur
+          </span>
         </div>
       </div>
 
@@ -121,6 +153,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ admin, notifications
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${
                 isActive
                   ? "bg-[#006c49] text-white shadow-sm shadow-[#006c49]/40 font-bold"

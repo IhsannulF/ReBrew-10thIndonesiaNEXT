@@ -4,12 +4,14 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
 export interface AdminHeaderProps {
   admin: {
     name: string;
     email: string;
     role: string;
+    hubLocation?: string;
   };
   notifications?: {
     pendingTickets: number;
@@ -22,6 +24,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   notifications = { pendingTickets: 0, pendingPayouts: 0 },
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isMarkedRead, setIsMarkedRead] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -47,35 +50,46 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-[#bbcabf]/30 bg-white/95 px-4 sm:px-6 lg:px-8 backdrop-blur-md">
-      {/* Left: Title & Status indicator / Mobile Logo */}
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Mobile View Brand Logo */}
-        <Link href="/admin" className="flex md:hidden items-center gap-2 shrink-0">
-          <Image
-            src="/logo.png"
-            alt="ReBrew Logo"
-            width={90}
-            height={26}
-            className="h-6 w-auto object-contain"
-            priority
-          />
-          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#006c49] text-white uppercase">
-            ADMIN
-          </span>
-        </Link>
+    <>
+      <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-[#bbcabf]/30 bg-white/95 px-4 sm:px-6 lg:px-8 backdrop-blur-md">
+        {/* Left: Mobile Toggle, Logo & Status indicator */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Buka Menu Navigasi Admin"
+            className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl border border-[#bbcabf]/40 bg-white text-[#0b1c30] hover:bg-[#eff4ff] transition-colors cursor-pointer"
+          >
+            <GoogleIcon name="menu" size={20} />
+          </button>
 
-        <div className="hidden md:flex items-center gap-2">
-          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-bold text-[#006c49] uppercase tracking-wider">
-            Admin Live Operation
-          </span>
+          {/* Mobile View Brand Logo */}
+          <Link href="/admin" className="flex md:hidden items-center gap-1.5 shrink-0">
+            <Image
+              src="/logo.png"
+              alt="ReBrew Logo"
+              width={85}
+              height={24}
+              className="h-6 w-auto object-contain"
+              priority
+            />
+            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#006c49] text-white uppercase">
+              ADMIN
+            </span>
+          </Link>
+
+          <div className="hidden md:flex items-center gap-2">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-[#006c49] uppercase tracking-wider">
+              Admin Live Operation
+            </span>
+          </div>
+          <span className="text-gray-300 hidden md:inline">|</span>
+          <div className="text-xs text-[#6c7a71] truncate hidden sm:block">
+            Micro-Hub Surabaya Timur (Jl. Raya Gn. Anyar Sawah No.15)
+          </div>
         </div>
-        <span className="text-gray-300 hidden md:inline">|</span>
-        <div className="text-xs text-[#6c7a71] truncate hidden sm:block">
-          Micro-Hub Surabaya Timur (Jl. Raya Gn. Anyar Sawah No.15)
-        </div>
-      </div>
 
       {/* Right: Quick actions & Profile */}
       <div className="flex items-center gap-3">
@@ -261,5 +275,31 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         </div>
       </div>
     </header>
+
+    {/* Mobile Slide-Out Drawer Navigation */}
+    {isMobileMenuOpen && (
+      <div
+        className="fixed inset-0 z-50 flex md:hidden"
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Backdrop overlay */}
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+
+        {/* Drawer container */}
+        <div className="relative flex w-[280px] max-w-[85vw] flex-col h-full bg-[#0b1c30] shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+          <AdminSidebar
+            admin={admin}
+            notifications={notifications}
+            onClose={() => setIsMobileMenuOpen(false)}
+          />
+        </div>
+      </div>
+    )}
+    </>
   );
 };
+
