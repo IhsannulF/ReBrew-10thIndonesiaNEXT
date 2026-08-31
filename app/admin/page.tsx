@@ -79,7 +79,7 @@ export default async function AdminDashboardPage() {
   let cupPlastikKg = 0;
   let botolPlastikKg = 0;
   let ampasKopiKg = 0;
-  let kardusKalengKg = 0;
+  let tutupCupKg = 0;
 
   transactionList
     .filter((t) => t.status === "confirmed")
@@ -91,8 +91,8 @@ export default async function AdminDashboardPage() {
         botolPlastikKg += weight;
       } else if (cat.includes("ampas")) {
         ampasKopiKg += weight;
-      } else if (cat.includes("kardus") || cat.includes("kaleng")) {
-        kardusKalengKg += weight;
+      } else if (cat.includes("tutup")) {
+        tutupCupKg += weight;
       } else {
         cupPlastikKg += weight;
       }
@@ -100,7 +100,7 @@ export default async function AdminDashboardPage() {
 
   // Hub Capacity calculation (Kapasitas Micro-Hub 2.000 kg / 2.0 Ton)
   const hubCapacityKg = 2000;
-  const currentStockKg = cupPlastikKg + botolPlastikKg + ampasKopiKg + kardusKalengKg;
+  const currentStockKg = cupPlastikKg + botolPlastikKg + ampasKopiKg + tutupCupKg;
   const hubUsagePercent = Math.min(100, Math.round((currentStockKg / hubCapacityKg) * 100));
 
   return (
@@ -112,7 +112,7 @@ export default async function AdminDashboardPage() {
             <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               Operational Command Hub
             </span>
-            <span className="text-xs text-slate-300">Surabaya Timur (Gn. Anyar Sawah)</span>
+            <span className="text-xs text-slate-300">Jakarta Selatan (Melawai, Jl. Iskandarsyah)</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
             Pusat Kendali Admin ReBrew
@@ -394,7 +394,7 @@ export default async function AdminDashboardPage() {
           <div className="rounded-3xl border border-[#bbcabf]/30 bg-white p-5 shadow-2xs">
             <h3 className="text-sm font-bold text-[#0b1c30] mb-1 flex items-center gap-2">
               <GoogleIcon name="warehouse" size={18} className="text-[#006c49]" />
-              Stok Sampah di Micro-Hub Surabaya Timur
+              Stok Sampah di Micro-Hub Jakarta Selatan (Melawai)
             </h3>
             <p className="text-[11px] text-[#6c7a71] mb-4">
               Akumulasi sebelum pengiriman bulk ke pabrik daur ulang.
@@ -442,13 +442,13 @@ export default async function AdminDashboardPage() {
 
               <div>
                 <div className="flex justify-between font-semibold mb-1">
-                  <span className="text-[#3c4a42]">Kardus & Kaleng:</span>
-                  <span className="font-bold text-[#0b1c30]">{kardusKalengKg.toFixed(1)} kg</span>
+                  <span className="text-[#3c4a42]">Tutup Cup & Sedotan (HDPE/PP):</span>
+                  <span className="font-bold text-[#0b1c30]">{tutupCupKg.toFixed(1)} kg</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-[#f1f5f9] overflow-hidden">
                   <div
-                    className="h-full bg-[#64748b] rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.round((kardusKalengKg / 300) * 100))}%` }}
+                    className="h-full bg-[#8b5cf6] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.round((tutupCupKg / 300) * 100))}%` }}
                   />
                 </div>
               </div>

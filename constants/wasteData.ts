@@ -14,6 +14,7 @@ export interface WasteCategory {
 export interface DropPoint {
   id: string;
   name: string;
+  adminName?: string;
   address: string;
   distance: string;
   distanceKm: number;
@@ -100,26 +101,6 @@ export const WASTE_CATEGORIES: WasteCategory[] = [
     description: "Lid plastik cembung/flat, seal cup, dan sedotan",
   },
   {
-    id: "kaleng",
-    name: "Kaleng Minuman (Aluminium)",
-    category: "Logam",
-    offtakerPricePerKg: 14000,
-    pointPerKg: Math.round(14000 * DEFAULT_SHARE_RATE), // 4.900 Poin (Rp 4.900)
-    co2Factor: 2.5,
-    icon: "inventory_2",
-    description: "Kaleng soda, susu evaporasi, dan kaleng minuman kopi",
-  },
-  {
-    id: "kardus",
-    name: "Kardus & Karton Kemasan",
-    category: "Kertas & Kardus",
-    offtakerPricePerKg: 2500,
-    pointPerKg: Math.round(2500 * DEFAULT_SHARE_RATE), // 875 Poin (Rp 875)
-    co2Factor: 0.9,
-    icon: "package_2",
-    description: "Kardus kemasan bahan baku, karton box sirup kering",
-  },
-  {
     id: "ampas-kopi",
     name: "Ampas Kopi (Spent Grounds)",
     category: "Organik",
@@ -133,6 +114,19 @@ export const WASTE_CATEGORIES: WasteCategory[] = [
 
 // Data Resmi Drop Point ReBrew (Hanya yang memiliki akun Admin terdaftar)
 export const DROP_POINTS: DropPoint[] = [
+  {
+    id: "dp-melawai-jaksel-01",
+    name: "ReBrew Central Hub - Jakarta Selatan (Melawai)",
+    adminName: "Fathiyah Nurul Izzah",
+    address: "Jl. Iskandarsyah Raya No.65, RT.5/RW.2, Melawai, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12160",
+    distance: "0.5 km",
+    distanceKm: 0.5,
+    hours: "08:00 - 20:00 WIB",
+    latitude: -6.244293,
+    longitude: 106.801648,
+    googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=-6.244293,106.801648",
+    phone: "0812-3456-7890",
+  },
   {
     id: "dp-central-hub-01",
     name: "ReBrew Central Hub - Surabaya Timur",

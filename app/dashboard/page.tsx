@@ -1,6 +1,7 @@
 import React from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { RecyclingDashboard } from "@/components/dashboard/RecyclingDashboard";
 import {
   DashboardData,
@@ -17,9 +18,10 @@ import { autoRejectExpiredPickups } from "@/app/actions/transactions";
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+  const db = createAdminClient();
   
   // Auto-reject any expired pickups across the platform
-  await autoRejectExpiredPickups(supabase);
+  await autoRejectExpiredPickups(db);
 
   const {
     data: { user },
@@ -35,21 +37,12 @@ export default async function DashboardPage() {
   const defaultEmptyComposition: WasteCompositionItem[] = [
     {
       key: "cup_plastik",
-      name: "Cup Plastik PP",
+      name: "Plastic Cup (PP/PET)",
       weightKg: 0,
       percentage: 0,
       points: 5,
       color: "#0284c7",
       icon: "coffee",
-    },
-    {
-      key: "kardus",
-      name: "Kardus Kemasan",
-      weightKg: 0,
-      percentage: 0,
-      points: 15,
-      color: "#d97706",
-      icon: "package_2",
     },
     {
       key: "botol_plastik",
@@ -61,17 +54,8 @@ export default async function DashboardPage() {
       icon: "local_drink",
     },
     {
-      key: "kaleng",
-      name: "Kaleng Krimer",
-      weightKg: 0,
-      percentage: 0,
-      points: 20,
-      color: "#0d9488",
-      icon: "inventory_2",
-    },
-    {
       key: "tutup_cup",
-      name: "Tutup Cup & Lid",
+      name: "Tutup Cup & Seal",
       weightKg: 0,
       percentage: 0,
       points: 3,
@@ -85,23 +69,37 @@ export default async function DashboardPage() {
   if (user?.id) {
     try {
       // 1. Fetch User Profile & Badges from Supabase
-      const { data: profile } = await supabase
+      let { data: profile } = await db
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
-      const { data: userBadges } = await supabase
+      if (!profile) {
+        const res = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+        profile = res.data;
+      }
+
+      let { data: userBadges } = await db
         .from("user_badges")
         .select("badge_id, unlocked_at")
         .eq("user_id", user.id);
 
+      if (!userBadges) {
+        const res = await supabase
+          .from("user_badges")
+          .select("badge_id, unlocked_at")
+          .eq("user_id", user.id);
+        userBadges = res.data;
+      }
+
       const unlockedBadgeMap = new Map(
         (userBadges || []).map((ub: any) => [ub.badge_id, ub.unlocked_at])
       );
-
-      const hasEcoPartnerBadge = unlockedBadgeMap.has("bdg-1");
-      const has1TonBadge = unlockedBadgeMap.has("bdg-2");
 
       const userName =
         profile?.full_name ||
@@ -112,17 +110,17 @@ export default async function DashboardPage() {
         profile?.cafe_name ||
         user?.user_metadata?.cafe_name ||
         "Kedai Kopi Mitra";
-      const userCity = profile?.city || user?.user_metadata?.city || "Surabaya";
+      const userCity = profile?.city || user?.user_metadata?.city || "Jakarta Selatan";
       const userTier = profile?.tier || user?.user_metadata?.tier || "starter";
 
       const saldoCoins = Number(profile?.saldo_poin ?? 0);
       const totalKg = Number(profile?.total_kg ?? 0.0);
-      const streakDays = Number(profile?.active_streak_days ?? 0);
+      const streakDays = Number(profile?.active_streak_days ?? (totalKg > 0 ? 3 : 0));
 
       // If user profile is not yet in public.profiles table, insert it immediately so other users can see it on leaderboard
       if (!profile) {
         try {
-          await supabase.from("profiles").upsert({
+          await db.from("profiles").upsert({
             id: user.id,
             email: user.email,
             full_name: userName,
@@ -168,16 +166,26 @@ export default async function DashboardPage() {
       dashboardData.stats.wasteKgThisMonth = totalKg;
       dashboardData.stats.co2SavedKg = calculateCO2Savings(totalKg);
       dashboardData.stats.activeStreakDays = streakDays;
-      dashboardData.target.currentKg = totalKg;
-
+      
       // 2. Fetch Monthly Target from public.monthly_targets
-      const { data: targetData } = await supabase
+      let { data: targetData } = await db
         .from("monthly_targets")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      if (!targetData) {
+        const res = await supabase
+          .from("monthly_targets")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        targetData = res.data;
+      }
 
       if (targetData) {
         dashboardData.target = {
@@ -194,50 +202,33 @@ export default async function DashboardPage() {
       }
 
       // 3. Fetch Transactions from public.transactions
-      const { data: dbTransactions } = await supabase
+      let { data: dbTransactions } = await db
         .from("transactions")
-        .select(`
-          id,
-          method,
-          pickup_address,
-          notes,
-          total_weight_kg,
-          total_points,
-          total_co2_kg,
-          status,
-          scale_model,
-          collector_name,
-          created_at,
-          drop_points (
-            name,
-            address
-          ),
-          transaction_items (
-            category_id,
-            weight_kg,
-            points_earned,
-            co2_saved_kg,
-            waste_categories (
-              name,
-              point_per_kg
-            )
-          )
-        `)
+        .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
 
+      if (!dbTransactions || dbTransactions.length === 0) {
+        const res = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (res.data) dbTransactions = res.data;
+      }
+
       let lastScaleModel = "ReBrew Smart Scale v2.4 (BLE/WiFi)";
       let nextPickupScheduleDate = "";
       let nextPickupScheduleTime = "";
-      let nextPickupCollector = "ReBrew Micro-Hub Surabaya Timur";
+      let nextPickupCollector = "ReBrew Central Hub - Jakarta Selatan (Melawai)";
 
       if (dbTransactions && dbTransactions.length > 0) {
         const mappedTransactions: TransactionItem[] = dbTransactions.map((tx: any) => {
-          const firstItem = tx.transaction_items?.[0];
-          const rawCatId = (firstItem?.category_id || "").toLowerCase();
+          const rawCatId = (tx.category || "").toLowerCase();
           let categoryKey: WasteCategoryKey = "cup_plastik";
-          let materialName = firstItem?.waste_categories?.name || "Cup Plastik PP";
+          let materialName = tx.category || "Plastic Cup (PP/PET)";
 
           if (rawCatId.includes("botol")) {
             categoryKey = "botol_plastik";
@@ -245,15 +236,12 @@ export default async function DashboardPage() {
           } else if (rawCatId.includes("tutup")) {
             categoryKey = "tutup_cup";
             materialName = "Tutup Cup & Seal";
-          } else if (rawCatId.includes("kardus")) {
-            categoryKey = "kardus";
-            materialName = "Kardus Kemasan";
-          } else if (rawCatId.includes("kaleng")) {
-            categoryKey = "kaleng";
-            materialName = "Kaleng Minuman";
+          } else if (rawCatId.includes("ampas")) {
+            categoryKey = "cup_plastik";
+            materialName = "Ampas Kopi (Spent Grounds)";
           }
 
-          const dropPointName = tx.drop_points?.name || (tx.method === "dijemput" ? "Armada Jemput" : "ReBrew Hub Gubeng");
+          const dropPointName = tx.method === "dijemput" ? "Armada Jemput ReBrew" : "ReBrew Central Hub Melawai";
 
           return {
             id: tx.id,
@@ -267,9 +255,14 @@ export default async function DashboardPage() {
                   minute: "2-digit",
                 })
               : "Hari ini",
-            weightKg: Number(tx.total_weight_kg || 1.0),
+            weightKg: Number(tx.actual_weight || tx.total_weight_kg || 1.0),
             coins: Number(tx.total_points || 10),
-            status: tx.status || "confirmed",
+            status: (
+              tx.status === "confirmed" ||
+              tx.status === "verified" ||
+              Boolean(tx.verified_at) ||
+              (tx.notes && tx.notes.toLowerCase().includes("diverifikasi"))
+            ) ? "confirmed" : (tx.status === "rejected" ? "rejected" : "pending"),
             method: tx.method === "dijemput" ? "dijemput" : "drop_point",
             dropPointName,
           };
@@ -277,106 +270,68 @@ export default async function DashboardPage() {
 
         dashboardData.recentTransactions = mappedTransactions;
 
-        // Dynamic Real Notification from latest confirmed transaction
-        const latestConfirmedTx = dbTransactions.find((tx: any) => tx.status === "confirmed");
-        if (latestConfirmedTx) {
-          if (latestConfirmedTx.scale_model) {
-            lastScaleModel = latestConfirmedTx.scale_model;
-          }
-          if (latestConfirmedTx.collector_name) {
-            nextPickupCollector = latestConfirmedTx.collector_name;
-          } else if ((latestConfirmedTx as any).drop_points?.name) {
-            nextPickupCollector = (latestConfirmedTx as any).drop_points.name;
-          }
-
-          dashboardData.notification = {
-            id: latestConfirmedTx.id,
-            message: `Setoran ${latestConfirmedTx.id} Terverifikasi!`,
-            detail: `Timbangan ${latestConfirmedTx.scale_model || "Digital Smart Scale"} mencatat ${latestConfirmedTx.total_weight_kg} kg sampah · +${latestConfirmedTx.total_points} Koin ditambahkan ke saldo`,
-            coinsEarned: Number(latestConfirmedTx.total_points || 0),
-            timestamp: latestConfirmedTx.created_at
-              ? new Date(latestConfirmedTx.created_at).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "Hari ini",
-          };
-        } else {
-          dashboardData.notification = null;
+        const latestTx = dbTransactions[0];
+        if (latestTx?.scale_model) {
+          lastScaleModel = latestTx.scale_model;
         }
 
-        // Check for pending pickup schedule
         const pendingPickupTx = dbTransactions.find(
-          (tx: any) => (tx.method === "dijemput" || tx.type === "dijemput") && tx.status === "pending"
+          (t: any) => t.status === "pending" && (t.method === "dijemput" || (t.notes && t.notes.includes("Jadwal Jemput")))
         );
-        if (pendingPickupTx) {
-          nextPickupScheduleDate = "Menunggu Penjemputan";
-          if (pendingPickupTx.notes) {
-            const scheduleMatch = pendingPickupTx.notes.match(/Jadwal Jemput:\s*([^\(]+)\s*\(([^)]+)\)/);
-            if (scheduleMatch) {
-              nextPickupScheduleDate = scheduleMatch[1].trim();
-              nextPickupScheduleTime = scheduleMatch[2].trim();
-            }
+
+        if (pendingPickupTx && pendingPickupTx.notes) {
+          const scheduleMatch = pendingPickupTx.notes.match(/Jadwal Jemput:\s*([^\s(]+)\s*\(([^)]+)\)/);
+          if (scheduleMatch) {
+            nextPickupScheduleDate = scheduleMatch[1];
+            nextPickupScheduleTime = scheduleMatch[2].trim();
           }
           nextPickupCollector = pendingPickupTx.collector_name || "Armada ReBrew (Driver Penjemput)";
         }
 
-        // 4. Calculate Live Waste Composition from transaction_items
+        // 4. Calculate Live Waste Composition
         const categoryWeights: Record<string, { weight: number; points: number }> = {
           cup_plastik: { weight: 0, points: 5 },
-          kardus: { weight: 0, points: 15 },
           botol_plastik: { weight: 0, points: 10 },
-          kaleng: { weight: 0, points: 20 },
           tutup_cup: { weight: 0, points: 3 },
         };
 
         let totalCalculatedWeight = 0;
 
         dbTransactions.forEach((tx: any) => {
-          if (tx.status === "confirmed" && tx.transaction_items) {
-            tx.transaction_items.forEach((item: any) => {
-              const w = Number(item.weight_kg || 0);
-              const p = Number(item.points_earned || 0);
-              const catId = (item.category_id || "").toLowerCase();
+          const isTxConfirmed =
+            tx.status === "confirmed" ||
+            tx.status === "verified" ||
+            Boolean(tx.verified_at) ||
+            (tx.notes && tx.notes.toLowerCase().includes("diverifikasi"));
 
-              totalCalculatedWeight += w;
+          if (isTxConfirmed) {
+            const w = Number(tx.actual_weight || tx.total_weight_kg || 0);
+            const catId = (tx.category || "").toLowerCase();
 
-              if (catId.includes("cup") && !catId.includes("tutup")) {
-                categoryWeights.cup_plastik.weight += w;
-              } else if (catId.includes("botol")) {
-                categoryWeights.botol_plastik.weight += w;
-              } else if (catId.includes("tutup")) {
-                categoryWeights.tutup_cup.weight += w;
-              } else if (catId.includes("kardus")) {
-                categoryWeights.kardus.weight += w;
-              } else if (catId.includes("kaleng")) {
-                categoryWeights.kaleng.weight += w;
-              }
-            });
+            totalCalculatedWeight += w;
+
+            if (catId.includes("cup") && !catId.includes("tutup")) {
+              categoryWeights.cup_plastik.weight += w;
+            } else if (catId.includes("botol")) {
+              categoryWeights.botol_plastik.weight += w;
+            } else if (catId.includes("tutup")) {
+              categoryWeights.tutup_cup.weight += w;
+            } else {
+              categoryWeights.cup_plastik.weight += w;
+            }
           }
         });
 
         if (totalCalculatedWeight > 0) {
-          const liveComposition: WasteCompositionItem[] = [
+          dashboardData.wasteComposition = [
             {
               key: "cup_plastik",
-              name: "Cup Plastik PP",
+              name: "Plastic Cup (PP/PET)",
               weightKg: Math.round(categoryWeights.cup_plastik.weight * 10) / 10,
               percentage: Math.round((categoryWeights.cup_plastik.weight / totalCalculatedWeight) * 100),
               points: 5,
               color: "#0284c7",
               icon: "coffee",
-            },
-            {
-              key: "kardus",
-              name: "Kardus Kemasan",
-              weightKg: Math.round(categoryWeights.kardus.weight * 10) / 10,
-              percentage: Math.round((categoryWeights.kardus.weight / totalCalculatedWeight) * 100),
-              points: 15,
-              color: "#d97706",
-              icon: "package_2",
             },
             {
               key: "botol_plastik",
@@ -388,17 +343,8 @@ export default async function DashboardPage() {
               icon: "local_drink",
             },
             {
-              key: "kaleng",
-              name: "Kaleng Krimer",
-              weightKg: Math.round(categoryWeights.kaleng.weight * 10) / 10,
-              percentage: Math.round((categoryWeights.kaleng.weight / totalCalculatedWeight) * 100),
-              points: 20,
-              color: "#0d9488",
-              icon: "inventory_2",
-            },
-            {
               key: "tutup_cup",
-              name: "Tutup Cup & Lid",
+              name: "Tutup Cup & Seal",
               weightKg: Math.round(categoryWeights.tutup_cup.weight * 10) / 10,
               percentage: Math.round((categoryWeights.tutup_cup.weight / totalCalculatedWeight) * 100),
               points: 3,
@@ -406,16 +352,10 @@ export default async function DashboardPage() {
               icon: "takeout_dining",
             },
           ];
-
-          dashboardData.wasteComposition = liveComposition;
         }
-      } else {
-        dashboardData.recentTransactions = [];
-        dashboardData.notification = null;
-        dashboardData.wasteComposition = defaultEmptyComposition;
       }
 
-      // 4b. Sync Device & Collector Status from Database
+      // 4b. Sync Device & Collector Status
       const liveDeviceStatus: DeviceCollectorStatus = {
         scaleStatus: "online",
         scaleModel: lastScaleModel,
@@ -428,30 +368,43 @@ export default async function DashboardPage() {
 
       dashboardData.deviceStatus = liveDeviceStatus;
 
-      // 5. Fetch Daily Missions from public.daily_missions
-      const { data: dbMissions } = await supabase
+      // 5. Fetch Daily Missions
+      let { data: dbMissions } = await db
         .from("daily_missions")
         .select("*")
         .limit(3);
 
-      if (dbMissions && dbMissions.length > 0) {
-        dashboardData.dailyMissions = dbMissions.map((m: any) => ({
-          id: m.id,
-          title: m.title,
-          description: m.description,
-          targetKg: Number(m.target_kg || 5.0),
-          progressKg: Math.min(Number(m.target_kg || 5.0), Math.round((Number(totalKg) * 0.2) * 10) / 10),
-          rewardCoins: Number(m.reward_coins || 25),
-          completed: totalKg >= Number(m.target_kg || 5.0),
-        }));
+      if (!dbMissions || dbMissions.length === 0) {
+        const res = await supabase.from("daily_missions").select("*").limit(3);
+        if (res.data) dbMissions = res.data;
       }
 
-      // 6. Fetch Eco-Badges & User Unlocked Badges
-      const { data: dbBadges } = await supabase.from("eco_badges").select("*");
+      if (dbMissions && dbMissions.length > 0) {
+        dashboardData.dailyMissions = dbMissions.map((m: any) => {
+          const target = Number(m.target_kg || 5.0);
+          const currentProgress = totalKg > 0 ? Math.min(target, totalKg) : 0;
+          return {
+            id: m.id,
+            title: m.title,
+            description: m.description,
+            targetKg: target,
+            progressKg: Math.round(currentProgress * 10) / 10,
+            rewardCoins: Number(m.reward_coins || 25),
+            completed: totalKg >= target,
+          };
+        });
+      }
+
+      // 6. Fetch Eco-Badges
+      let { data: dbBadges } = await db.from("eco_badges").select("*");
+      if (!dbBadges || dbBadges.length === 0) {
+        const res = await supabase.from("eco_badges").select("*");
+        if (res.data) dbBadges = res.data;
+      }
 
       if (dbBadges && dbBadges.length > 0) {
         dashboardData.badges = dbBadges.map((b: any) => {
-          const isUnlocked = unlockedBadgeMap.has(b.id) || (totalKg >= 25 && b.id === "bdg-2");
+          const isUnlocked = unlockedBadgeMap.has(b.id) || (totalKg >= 5 && b.id === "bdg-1") || (totalKg >= 25 && b.id === "bdg-2");
           return {
             id: b.id,
             name: b.name,
@@ -464,15 +417,23 @@ export default async function DashboardPage() {
         });
       }
 
-      // 7. Pure Live Leaderboard (Hanya Menampilkan Mitra Kafe, Akun Admin Dikecualikan)
-      const { data: dbProfiles } = await supabase
+      // 7. Pure Live Leaderboard
+      let { data: dbProfiles } = await db
         .from("profiles")
         .select("id, full_name, cafe_name, city, total_kg, saldo_poin, tier, role")
         .neq("role", "admin")
         .order("total_kg", { ascending: false });
 
-      // Fetch all unlocked badges for all users
-      const { data: allUserBadges } = await supabase
+      if (!dbProfiles || dbProfiles.length === 0) {
+        const res = await supabase
+          .from("profiles")
+          .select("id, full_name, cafe_name, city, total_kg, saldo_poin, tier, role")
+          .neq("role", "admin")
+          .order("total_kg", { ascending: false });
+        if (res.data) dbProfiles = res.data;
+      }
+
+      const { data: allUserBadges } = await db
         .from("user_badges")
         .select("user_id, badge_id");
 

@@ -34,20 +34,34 @@ export function useTransactionHistory(
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
 
   // Fetch real user transactions from Supabase database
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const data = await getUserTransactionHistory();
+  const refetch = async () => {
+    try {
+      const data = await getUserTransactionHistory();
+      if (data && data.length > 0) {
         setTransactions(data);
-      } catch (err) {
-        console.error("Error loading user transaction history:", err);
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err) {
+      console.error("Error refreshing user transaction history:", err);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    loadData();
+  useEffect(() => {
+    setIsLoading(true);
+    refetch();
+
+    const handleFocus = () => {
+      refetch();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    const interval = setInterval(refetch, 4000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
 

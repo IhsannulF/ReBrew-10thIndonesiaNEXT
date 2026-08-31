@@ -9,7 +9,7 @@ import {
   COIN_RATE,
   MIN_WITHDRAW_POINTS,
 } from "@/constants/payoutData";
-import { requestPayout } from "@/app/actions/payouts";
+import { requestPayout, getUserPayoutData } from "@/app/actions/payouts";
 
 interface UsePayoutProps {
   initialBalance?: number;
@@ -33,6 +33,28 @@ export function usePayout({
   useEffect(() => {
     setPayoutHistory(initialHistory);
   }, [initialHistory]);
+
+  // Live auto-refresh balance when returning to tab or on interval
+  useEffect(() => {
+    async function loadLatest() {
+      try {
+        const res = await getUserPayoutData();
+        if (res) {
+          setBalancePoints(res.saldoPoints);
+          setPayoutHistory(res.payouts);
+        }
+      } catch {}
+    }
+
+    const onFocus = () => loadLatest();
+    window.addEventListener("focus", onFocus);
+    const interval = setInterval(loadLatest, 4000);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Active payout after submission (to show real-time status and estimated arrival)
   const [activePayout, setActivePayout] = useState<PayoutTransaction | null>(null);

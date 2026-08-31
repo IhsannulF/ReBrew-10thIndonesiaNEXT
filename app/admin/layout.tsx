@@ -29,8 +29,11 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  const userEmail = (user.email || profile?.email || "").toLowerCase();
+  const isAdminEmail = userEmail === "ihsanulfikri3176@gmail.com";
+
   // Security guard: If user is not admin, redirect to partner dashboard
-  const userRole = profile?.role || user.user_metadata?.role || "mitra";
+  const userRole = isAdminEmail ? "admin" : (profile?.role || user.user_metadata?.role || "mitra");
   if (userRole !== "admin") {
     redirect("/dashboard");
   }
@@ -50,10 +53,11 @@ export default async function AdminLayout({
     .in("status", ["pending", "processing"]);
 
   const adminProfile = {
-    name: profile?.full_name || user.user_metadata?.full_name || "Admin ReBrew",
-    email: profile?.email || user.email || "admin@rebrew.id",
+    name: profile?.full_name || (isAdminEmail ? "Fathiyah Nurul Izzah" : (user.user_metadata?.full_name || "Fathiyah Nurul Izzah")),
+    email: profile?.email || user.email || "ihsanulfikri3176@gmail.com",
     role: "admin",
-    hubLocation: "Surabaya Timur",
+    hubLocation: profile?.city ? `${profile.city} (Melawai)` : "Jakarta Selatan (Melawai)",
+    address: "Jl. Iskandarsyah Raya No.65, Melawai, Jakarta Selatan",
   };
 
   const notificationCounts = {

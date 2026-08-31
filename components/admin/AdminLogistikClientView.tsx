@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import {
   AdminCourierItem,
@@ -41,7 +42,7 @@ export const AdminLogistikClientView: React.FC<AdminLogistikClientViewProps> = (
   const [newCourierPhone, setNewCourierPhone] = useState("");
   const [newCourierVehicle, setNewCourierVehicle] = useState("Motor Listrik Gesits Box (30 kg)");
   const [newCourierPlate, setNewCourierPlate] = useState("");
-  const [newCourierArea, setNewCourierArea] = useState("Surabaya Timur");
+  const [newCourierArea, setNewCourierArea] = useState("Jakarta Selatan (Melawai)");
 
   // Feedback State
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -167,7 +168,7 @@ export const AdminLogistikClientView: React.FC<AdminLogistikClientViewProps> = (
             Manajemen Armada Kurir & Penugasan Pickup Kafe
           </h1>
           <p className="text-xs text-[#6c7a71] mt-0.5">
-            Kelola rute armada penjemputan berbasis radius dari Micro-Hub Surabaya Timur untuk efisiensi BBM dan waktu.
+            Kelola rute armada penjemputan berbasis radius dari Micro-Hub Jakarta Selatan (Melawai) untuk efisiensi BBM dan waktu.
           </p>
         </div>
 
@@ -238,8 +239,8 @@ export const AdminLogistikClientView: React.FC<AdminLogistikClientViewProps> = (
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-base font-extrabold text-[#0b1c30] truncate">Surabaya Timur</div>
-            <div className="text-[11px] text-[#6c7a71] font-medium mt-0.5">Radius operasional 15 km</div>
+            <div className="text-base font-extrabold text-[#0b1c30] truncate">Jakarta Selatan (Melawai)</div>
+            <div className="text-[11px] text-[#6c7a71] font-medium mt-0.5">Jl. Iskandarsyah Raya No.65</div>
           </div>
         </div>
       </div>
@@ -355,18 +356,27 @@ export const AdminLogistikClientView: React.FC<AdminLogistikClientViewProps> = (
                       </span>
                     </div>
 
-                    {d.status !== "Selesai" && d.status !== "Ditolak" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedDispatch(d);
-                          setSelectedCourierName(d.courierName);
-                        }}
-                        className="px-3 py-1 rounded-lg bg-white border border-[#006c49] text-[#006c49] font-bold text-[11px] hover:bg-[#eff4ff] transition-colors cursor-pointer"
+                    <div className="flex items-center gap-2">
+                      {d.status !== "Selesai" && d.status !== "Ditolak" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDispatch(d);
+                            setSelectedCourierName(d.courierName);
+                          }}
+                          className="px-3 py-1 rounded-lg bg-white border border-[#006c49] text-[#006c49] font-bold text-[11px] hover:bg-[#eff4ff] transition-colors cursor-pointer"
+                        >
+                          Tugaskan Kurir
+                        </button>
+                      )}
+                      <Link
+                        href={`/admin/verifikasi?ticket=${d.ticketCode}`}
+                        className="px-3 py-1 rounded-lg bg-[#006c49] text-white font-bold text-[11px] hover:bg-[#005237] transition-colors flex items-center gap-1 shadow-2xs"
                       >
-                        Tugaskan Kurir
-                      </button>
-                    )}
+                        <span>Timbang & Verifikasi</span>
+                        <GoogleIcon name="arrow_forward" size={13} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))
@@ -383,7 +393,7 @@ export const AdminLogistikClientView: React.FC<AdminLogistikClientViewProps> = (
                 Daftar Armada & Kurir ReBrew
               </h2>
               <p className="text-xs text-[#6c7a71] mt-0.5">
-                Kendaraan listrik dan blindvan pickup Micro-Hub Surabaya Timur.
+                Kendaraan listrik dan blindvan pickup Micro-Hub Jakarta Selatan (Melawai).
               </p>
             </div>
           </div>
@@ -629,7 +639,7 @@ export const AdminLogistikClientView: React.FC<AdminLogistikClientViewProps> = (
                   <input
                     type="text"
                     required
-                    placeholder="Surabaya Timur"
+                    placeholder="Jakarta Selatan (Melawai)"
                     value={newCourierArea}
                     onChange={(e) => setNewCourierArea(e.target.value)}
                     className="w-full p-2.5 rounded-xl border border-[#bbcabf]/40 bg-white text-[#0b1c30] outline-none"

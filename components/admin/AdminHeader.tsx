@@ -12,6 +12,7 @@ export interface AdminHeaderProps {
     email: string;
     role: string;
     hubLocation?: string;
+    address?: string;
   };
   notifications?: {
     pendingTickets: number;
@@ -87,7 +88,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           </div>
           <span className="text-gray-300 hidden md:inline">|</span>
           <div className="text-xs text-[#6c7a71] truncate hidden sm:block">
-            Micro-Hub Surabaya Timur (Jl. Raya Gn. Anyar Sawah No.15)
+            {admin.hubLocation || "Micro-Hub Jakarta Selatan (Melawai)"} ({admin.address || "Jl. Iskandarsyah Raya No.65, Melawai"})
           </div>
         </div>
 

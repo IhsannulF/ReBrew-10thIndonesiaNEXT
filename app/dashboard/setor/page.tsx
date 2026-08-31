@@ -35,6 +35,7 @@ export default function SetorSampahPage() {
     resetWeights,
     createdTicketCode,
     isSubmitting,
+    submitError,
     handleSubmit,
   } = useDepositCalculator();
 
@@ -242,6 +243,8 @@ export default function SetorSampahPage() {
             pickupTimeSlot={pickupTimeSlot}
             setPickupTimeSlot={setPickupTimeSlot}
             summary={summary}
+            isSubmitting={isSubmitting}
+            submitError={submitError}
           />
         </div>
       </form>

@@ -4,34 +4,28 @@ import { GoogleIcon } from "@/components/ui/GoogleIcon";
 
 const wastePrices = [
   {
+    icon: "local_cafe",
+    name: "Plastic Cup (PP/PET)",
+    description: "Cup kopi takeaway & cup boba bersih",
+    coins: "35",
+  },
+  {
     icon: "water_bottle",
-    name: "Botol Plastik (PET)",
-    description: "Galon, jerigen, botol PET bersih",
-    coins: "15",
+    name: "Botol Plastik (PET Bening)",
+    description: "Botol air mineral, botol sirup bening",
+    coins: "42",
   },
   {
-    icon: "inventory_2",
-    name: "Kaleng Aluminium",
-    description: "Kaleng minuman & makanan kaleng",
-    coins: "10",
+    icon: "takeout_dining",
+    name: "Tutup Cup & Sedotan (HDPE/PP)",
+    description: "Lid plastik cembung/flat, seal cup, sedotan",
+    coins: "21",
   },
   {
-    icon: "liquor",
-    name: "Kaca / Botol Kaca",
-    description: "Botol sirup, toples kaca utuh",
-    coins: "8",
-  },
-  {
-    icon: "package_2",
-    name: "Kardus / Kertas",
-    description: "Kardus box, koran, arsip kertas",
-    coins: "5",
-  },
-  {
-    icon: "smartphone",
-    name: "Elektronik Bekas (E-Waste)",
-    description: "HP, kabel tembaga, charger rusak",
-    coins: "25",
+    icon: "compost",
+    name: "Ampas Kopi (Spent Grounds)",
+    description: "Ampas espresso & manual brew untuk pupuk & bio-arang",
+    coins: "21",
   },
 ];
 

@@ -103,7 +103,7 @@ export const DeviceCollectorStatusSection: React.FC<DeviceCollectorStatusSection
           </span>
           <span className="font-bold text-[#0b1c30] flex items-center gap-1.5">
             <GoogleIcon name="local_shipping" size={16} className="text-[#0284c7]" />
-            {deviceStatus.collectorName || "ReBrew Micro-Hub Surabaya Timur"}
+            {deviceStatus.collectorName || "ReBrew Central Hub - Jakarta Selatan (Melawai) (Admin: Fathiyah Nurul Izzah)"}
           </span>
         </div>
       </div>

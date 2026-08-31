@@ -23,8 +23,6 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
     { key: "cup_plastik", label: "Cup Plastik", activeColor: "bg-[#006c49]" },
     { key: "botol_plastik", label: "Botol Plastik", activeColor: "bg-[#006c49]" },
     { key: "tutup_cup", label: "Tutup Cup", activeColor: "bg-[#006c49]" },
-    { key: "kardus", label: "Kardus", activeColor: "bg-[#006c49]" },
-    { key: "kaleng", label: "Kaleng", activeColor: "bg-[#006c49]" },
   ];
 
   const handleCategoryChange = (key: string) => {

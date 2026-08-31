@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
 import { DashboardData, CafeProfile, DashboardNotification } from "@/types/dashboard";
 import { initialDashboardData } from "@/lib/mock-dashboard-data";
@@ -26,6 +27,8 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
   data,
   user: userProp,
 }) => {
+  const router = useRouter();
+
   // Use data prop or fallback to initialDashboardData
   const activeData: DashboardData = data || initialDashboardData;
   
@@ -48,20 +51,35 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
     tierLabel: userProp?.tierLabel || activeData.user.tierLabel,
   };
 
-  // 1. Supabase Real-Time Listener for Instant IoT Transaction Alerts
+  // 1. Auto-refresh when returning to tab and every 4 seconds to sync live verified points/tasks
   useEffect(() => {
-    if (!profile.id) return;
+    const handleFocus = () => {
+      router.refresh();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 4000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, [router]);
+
+  // 2. Supabase Real-Time Listener for Instant IoT Transaction Alerts
+  useEffect(() => {
     const supabase = createClient();
 
     const channel = supabase
-      .channel(`realtime-tx-alerts-${profile.id}`)
+      .channel(`realtime-tx-alerts-live`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "transactions",
-          filter: `user_id=eq.${profile.id}`,
         },
         (payload: any) => {
           const tx = payload.new;
@@ -69,11 +87,12 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
             setLiveNotification({
               id: tx.id,
               message: `Setoran ${tx.id} Terverifikasi!`,
-              detail: `Timbangan ${tx.scale_model || "Digital IoT"} mencatat ${tx.total_weight_kg} kg · +${tx.total_points} Koin ditambahkan`,
+              detail: `Timbangan ${tx.scale_model || "Digital IoT"} mencatat ${tx.total_weight_kg || tx.actual_weight} kg · +${tx.total_points} Koin ditambahkan`,
               coinsEarned: Number(tx.total_points || 0),
               timestamp: "Baru saja",
             });
             setIsNotificationVisible(true);
+            router.refresh();
           }
         }
       )
@@ -82,7 +101,7 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile.id]);
+  }, [router]);
 
   const isScaleOnline = activeData.deviceStatus.scaleStatus === "online";
 

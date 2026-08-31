@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { PayoutFormData, PayoutTransaction, PayoutStatus } from '@/types/payout'
 import { PAYMENT_CHANNELS, COIN_RATE, MIN_WITHDRAW_POINTS } from '@/constants/payoutData'
@@ -63,14 +64,15 @@ function formatPayoutRow(row: any): PayoutTransaction {
   }
 }
 
-// 1. Ambil data Saldo Poin & Riwayat Pencairan User dari Supabase
+// 1. Ambil Data User, Saldo Poin, dan Riwayat Pencairan (Real DB)
 export async function getUserPayoutData(): Promise<UserPayoutDataResult> {
   const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const userSupabase = createClient(cookieStore)
+  const db = createAdminClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await userSupabase.auth.getUser()
 
   if (!user) {
     return {
@@ -83,11 +85,20 @@ export async function getUserPayoutData(): Promise<UserPayoutDataResult> {
   }
 
   // 1. Fetch Profile
-  const { data: profile } = await supabase
+  let { data: profile } = await db
     .from('profiles')
     .select('id, full_name, cafe_name, saldo_poin')
     .eq('id', user.id)
     .maybeSingle()
+
+  if (!profile) {
+    const res = await userSupabase
+      .from('profiles')
+      .select('id, full_name, cafe_name, saldo_poin')
+      .eq('id', user.id)
+      .maybeSingle()
+    profile = res.data
+  }
 
   const userName =
     profile?.full_name ||
@@ -101,14 +112,23 @@ export async function getUserPayoutData(): Promise<UserPayoutDataResult> {
   const saldoPoints = Number(profile?.saldo_poin ?? 0)
 
   // 2. Fetch Payouts History
-  const { data: payoutRows, error } = await supabase
+  let { data: payoutRows, error } = await db
     .from('payouts')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
+  if (error || !payoutRows || payoutRows.length === 0) {
+    const res = await userSupabase
+      .from('payouts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (res.data) payoutRows = res.data
+  }
+
   let payouts: PayoutTransaction[] = []
-  if (!error && payoutRows && payoutRows.length > 0) {
+  if (payoutRows && payoutRows.length > 0) {
     payouts = payoutRows.map(formatPayoutRow)
   }
 

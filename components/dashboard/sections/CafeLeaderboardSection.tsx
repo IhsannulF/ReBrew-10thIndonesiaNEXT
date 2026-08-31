@@ -33,7 +33,7 @@ export const CafeLeaderboardSection: React.FC<CafeLeaderboardSectionProps> = ({
                 id="leaderboard-heading"
                 className="text-sm sm:text-base font-bold text-[#0b1c30]"
               >
-                Leaderboard ({currentCity})
+                Leaderboard
               </h2>
             </div>
           </div>

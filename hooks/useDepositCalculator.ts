@@ -39,13 +39,13 @@ export function useDepositCalculator() {
   // State Metode Penyetoran
   const [method, setMethod] = useState<DepositMethod>("drop_point");
   const [selectedDropPoint, setSelectedDropPoint] = useState<string>(
-    DROP_POINTS[0]?.id || "dp-central-hub-01"
+    DROP_POINTS[0]?.id || "dp-melawai-jaksel-01"
   );
 
-  // State Jarak, Jadwal, dan Alamat Penjemputan Armada ReBrew
-  const [pickupDistance, setPickupDistance] = useState<number>(2.5); // Default 2.5 km (radius dekat)
+  // State Jarak, Jadwal, dan Alamat Penjemputan Armada ReBrew (Melawai, Jakarta Selatan)
+  const [pickupDistance, setPickupDistance] = useState<number>(0.5); // 0.5 km (area Melawai Jakarta Selatan)
   const [pickupAddress, setPickupAddress] = useState<string>(
-    "Kopi Selamat Cafe, Jl. Raya Gubeng No. 18, Surabaya"
+    "Kopi Selamat Cafe, Jl. Sultan Hasanuddin Dalam No.4, RT.3/RW.1, Kuningan, Melawai, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12160"
   );
   const [pickupNotes, setPickupNotes] = useState<string>("");
   const [pickupDate, setPickupDate] = useState<string>(
@@ -56,6 +56,7 @@ export function useDepositCalculator() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
   const [createdTicketCode, setCreatedTicketCode] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Handler perubahan input berat langsung
   const handleWeightChange = (id: string, value: string) => {
@@ -134,10 +135,17 @@ export function useDepositCalculator() {
   // Handler submit transaksi setor sampah (Tersinkronisasi dengan Database Supabase)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (summary.totalWeight <= 0) return;
-    if (method === "dijemput" && !summary.isPickupEligible) return;
+    if (summary.totalWeight <= 0) {
+      setSubmitError("Mohon masukkan estimasi berat sampah minimal 1 jenis limbah.");
+      return;
+    }
+    if (method === "dijemput" && !summary.isPickupEligible) {
+      setSubmitError(`Berat sampah kurang ${summary.weightDeficit} kg lagi untuk memenuhi syarat penjemputan armada.`);
+      return;
+    }
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const res = await createDepositTransaction({
@@ -155,12 +163,15 @@ export function useDepositCalculator() {
 
       if (res.success && res.ticketCode) {
         setCreatedTicketCode(res.ticketCode);
+        setIsSuccessModalOpen(true);
+      } else {
+        setSubmitError(res.error || "Gagal membuat tiket setoran sampah. Silakan coba beberapa saat lagi.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating deposit transaction:", err);
+      setSubmitError(err?.message || "Terjadi kendala jaringan saat membuat tiket setoran.");
     } finally {
       setIsSubmitting(false);
-      setIsSuccessModalOpen(true);
     }
   };
 
@@ -190,6 +201,8 @@ export function useDepositCalculator() {
     resetWeights,
     createdTicketCode,
     isSubmitting,
+    submitError,
+    setSubmitError,
     handleSubmit,
   };
 }

@@ -78,7 +78,7 @@ export const WasteCompositionSection: React.FC<WasteCompositionSectionProps> = (
               id="waste-distribution-heading"
               className="text-base sm:text-lg font-bold text-[#0b1c30]"
             >
-              Komposisi 5 Kategori Sampah Kafe
+              Komposisi Kategori Sampah Kafe
             </h2>
             <p className="text-xs sm:text-sm text-[#3c4a42] mt-0.5">
               Pilah sampah berdasarkan kategori material bahan baku daur ulang

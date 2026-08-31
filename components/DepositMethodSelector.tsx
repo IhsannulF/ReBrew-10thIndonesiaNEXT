@@ -21,6 +21,8 @@ export interface DepositMethodSelectorProps {
   pickupTimeSlot?: string;
   setPickupTimeSlot?: (slot: string) => void;
   summary: DepositSummary;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 }
 
 import { createClient } from "@/utils/supabase/client";
@@ -64,13 +66,15 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
   pickupTimeSlot = "09:00 - 12:00 WIB",
   setPickupTimeSlot,
   summary,
+  isSubmitting = false,
+  submitError = null,
 }) => {
   const [showFormulaModal, setShowFormulaModal] = useState(false);
   const [dbDropPoints, setDbDropPoints] = useState<typeof DROP_POINTS>(DROP_POINTS);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isScanning, setIsScanning] = useState(true);
 
-  // 1. Fetch data drop points resmi dari tabel Supabase
+  // 1. Fetch data drop points resmi dari tabel Supabase dengan jaminan Hub Melawai Jakarta Selatan
   React.useEffect(() => {
     async function loadDropPointsFromDb() {
       try {
@@ -80,25 +84,43 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
           .select("*")
           .eq("is_active", true);
 
+        const existingIds = new Set<string>();
+        const combined: typeof DROP_POINTS = [];
+
+        // 1. Selalu pastikan Drop Point Resmi Jakarta Selatan (Melawai) tersedia paling atas
+        DROP_POINTS.forEach((p) => {
+          existingIds.add(p.id);
+          combined.push(p);
+        });
+
+        // 2. Tambahkan drop point dari DB jika ada yang belum terdaftar
         if (data && data.length > 0 && !error) {
-          const mappedPoints = data.map((dp: any) => ({
-            id: dp.id,
-            name: dp.name,
-            address: dp.address,
-            distance: dp.latitude && dp.longitude ? "Dihitung..." : "1.2 km",
-            distanceKm: 1.2,
-            hours: dp.operating_hours || "08:00 - 20:00 WIB",
-            latitude: dp.latitude || -7.336184,
-            longitude: dp.longitude || 112.784428,
-            googleMapsUrl:
-              dp.google_maps_url ||
-              `https://www.google.com/maps/dir/?api=1&destination=${dp.latitude || -7.336184},${dp.longitude || 112.784428}`,
-            phone: dp.phone || "0812-3456-7890",
-          }));
-          setDbDropPoints(mappedPoints);
+          data.forEach((dp: any) => {
+            if (!existingIds.has(dp.id)) {
+              existingIds.add(dp.id);
+              combined.push({
+                id: dp.id,
+                name: dp.name,
+                adminName: dp.admin_name || "Fathiyah Nurul Izzah",
+                address: dp.address,
+                distance: "0.5 km",
+                distanceKm: 0.5,
+                hours: dp.operating_hours || "08:00 - 20:00 WIB",
+                latitude: dp.lat || dp.latitude || -6.244293,
+                longitude: dp.lng || dp.longitude || 106.801648,
+                googleMapsUrl:
+                  dp.google_maps_url ||
+                  `https://www.google.com/maps/search/?api=1&query=${dp.lat || dp.latitude || -6.244293},${dp.lng || dp.longitude || 106.801648}`,
+                phone: dp.phone || "0812-3456-7890",
+              });
+            }
+          });
         }
+
+        setDbDropPoints(combined);
       } catch {
-        // Gunakan fallback default jika offline
+        // Fallback ke DROP_POINTS constants
+        setDbDropPoints(DROP_POINTS);
       }
     }
 
@@ -115,14 +137,14 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
           setUserLocation({ lat: userLat, lng: userLng });
           setIsScanning(false);
 
-          // Cari drop point yang paling dekat dan dalam radius 25 km
+          // Cari drop point yang paling dekat
           let closestDp = dbDropPoints[0];
           let minDistance = Infinity;
 
           dbDropPoints.forEach((dp) => {
             if (dp.latitude && dp.longitude) {
               const dist = calculateHaversineDistance(userLat, userLng, dp.latitude, dp.longitude);
-              if (dist <= MAX_SCAN_RADIUS_KM && dist < minDistance) {
+              if (dist < minDistance) {
                 minDistance = dist;
                 closestDp = dp;
               }
@@ -148,9 +170,9 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
     }
   }, [dbDropPoints, setSelectedDropPoint, setPickupDistance]);
 
-  // 3. Filter dan urutkan hanya Drop Point yang masuk dalam radius 25 km dari kafe
+  // 3. Filter dan urutkan Drop Point berdasarkan jarak GPS
   const availableDropPoints = React.useMemo(() => {
-    return dbDropPoints.map((dp) => {
+    const list = dbDropPoints.map((dp) => {
       let calculatedDistance = dp.distanceKm;
       if (userLocation && dp.latitude && dp.longitude) {
         calculatedDistance = calculateHaversineDistance(
@@ -165,9 +187,15 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
         calculatedDistance,
         isWithin25Km: calculatedDistance <= MAX_SCAN_RADIUS_KM,
       };
-    })
-      .filter((dp) => dp.isWithin25Km || !userLocation) // Hanya dalam radius 25 km
-      .sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+    });
+
+    const filtered = list.filter((dp) => dp.isWithin25Km || !userLocation);
+    // Jika tidak ada dalam radius 25 km (misal GPS di luar jangkauan), tetap tampilkan drop point terdekat
+    if (filtered.length === 0 && list.length > 0) {
+      return list.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+    }
+
+    return filtered.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
   }, [dbDropPoints, userLocation]);
 
 
@@ -293,14 +321,21 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
                             {/* Themed Location Distance Badge */}
                             <div className="flex items-center gap-1 text-[11px] font-bold text-[#006c49] bg-[#eff4ff] border border-[#006c49]/20 px-2.5 py-0.5 rounded-full shrink-0">
                               <GoogleIcon name="near_me" size={13} className="text-[#006c49]" />
-                              <span>{dp.calculatedDistance ? `${dp.calculatedDistance} km` : dp.distance}</span>
+                              <span>{typeof dp.calculatedDistance === "number" ? `${dp.calculatedDistance.toFixed(1)} km` : dp.distance}</span>
                             </div>
                           </div>
 
-                          {/* Address */}
+                          {/* Address & Admin PIC */}
                           <p className="text-[11px] text-[#6c7a71] mt-1 leading-relaxed">
                             {dp.address}
                           </p>
+
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="text-[10px] font-bold text-[#006c49] bg-[#eff4ff] border border-[#006c49]/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <GoogleIcon name="verified_user" size={12} className="text-[#006c49]" />
+                              Admin Hub: {dp.adminName || "Fathiyah Nurul Izzah"}
+                            </span>
+                          </div>
 
                           {/* Footer Details: Operating Hours & Google Maps Action */}
                           <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#bbcabf]/20">
@@ -587,14 +622,31 @@ export const DepositMethodSelector: React.FC<DepositMethodSelectorProps> = ({
           </div>
         </div>
 
+        {/* Submit Error Alert */}
+        {submitError && (
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#ffdad6]/40 border border-[#ba1a1a]/30 text-[#ba1a1a] text-xs">
+            <GoogleIcon name="error" size={18} className="shrink-0" />
+            <span className="font-medium leading-relaxed">{submitError}</span>
+          </div>
+        )}
+
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={summary.totalWeight === 0 || (method === "dijemput" && !summary.isPickupEligible)}
-          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-[#006c49] text-white text-sm font-bold shadow-sm hover:bg-[#2b6954] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          disabled={summary.totalWeight === 0 || (method === "dijemput" && !summary.isPickupEligible) || isSubmitting}
+          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-[#006c49] text-white text-sm font-bold shadow-sm hover:bg-[#2b6954] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
         >
-          <GoogleIcon name="check_circle" size={20} />
-          <span>Konfirmasi & Buat Tiket Setor</span>
+          {isSubmitting ? (
+            <>
+              <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              <span>Memproses Tiket...</span>
+            </>
+          ) : (
+            <>
+              <GoogleIcon name="check_circle" size={20} />
+              <span>Konfirmasi & Buat Tiket Setor</span>
+            </>
+          )}
         </button>
 
         {method === "dijemput" && !summary.isPickupEligible && summary.totalWeight > 0 && (

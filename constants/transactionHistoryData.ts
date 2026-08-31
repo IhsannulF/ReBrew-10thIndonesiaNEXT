@@ -43,22 +43,6 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
     borderColor: "#ddd6fe",
   },
   {
-    key: "kardus",
-    label: "Kardus & Box",
-    icon: "package_2",
-    color: "#d97706",
-    bgColor: "#fffbeb",
-    borderColor: "#fde68a",
-  },
-  {
-    key: "kaleng",
-    label: "Kaleng Minuman",
-    icon: "inventory_2",
-    color: "#0f766e",
-    bgColor: "#f0fdfa",
-    borderColor: "#99f6e4",
-  },
-  {
     key: "ampas_kopi",
     label: "Ampas Kopi",
     icon: "compost",

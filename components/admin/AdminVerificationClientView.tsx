@@ -170,7 +170,7 @@ export const AdminVerificationClientView: React.FC<AdminVerificationClientViewPr
             Verifikasi & Penimbangan Aktual Setor Sampah
           </h1>
           <p className="text-xs text-[#6c7a71] mt-0.5">
-            Timbang fisik limbah kafe di Micro-Hub Surabaya Timur, sesuaikan berat riil, dan terbitkan poin reward ke saldo kafe.
+            Timbang fisik limbah kafe di Micro-Hub Jakarta Selatan (Melawai), sesuaikan berat riil, dan terbitkan poin reward ke saldo kafe.
           </p>
         </div>
 
@@ -425,7 +425,7 @@ export const AdminVerificationClientView: React.FC<AdminVerificationClientViewPr
 
                 {/* Action Buttons */}
                 {selectedTicket.status === "pending" ? (
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex items-center gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => setIsRejectModalOpen(true)}
@@ -444,16 +444,26 @@ export const AdminVerificationClientView: React.FC<AdminVerificationClientViewPr
                     </button>
                   </div>
                 ) : (
-                  <div
-                    className={`p-3.5 rounded-xl text-center text-xs font-bold border ${
-                      selectedTicket.status === "confirmed"
-                        ? "bg-[#dcfce7] text-[#15803d] border-[#86efac]"
-                        : "bg-[#fee2e2] text-[#991b1b] border-[#fca5a5]"
-                    }`}
-                  >
-                    {selectedTicket.status === "confirmed"
-                      ? "✓ Tiket Ini Telah Selesai Diverifikasi"
-                      : "✕ Tiket Ini Ditolak"}
+                  <div className="flex flex-col gap-2 pt-2">
+                    <div
+                      className={`p-3 rounded-xl text-center text-xs font-bold border ${
+                        selectedTicket.status === "confirmed"
+                          ? "bg-[#dcfce7] text-[#15803d] border-[#86efac]"
+                          : "bg-[#fee2e2] text-[#991b1b] border-[#fca5a5]"
+                      }`}
+                    >
+                      {selectedTicket.status === "confirmed"
+                        ? "✓ Tiket Ini Telah Diverifikasi"
+                        : "✕ Tiket Ini Ditolak"}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-2.5 rounded-xl border border-[#006c49]/40 text-[#006c49] bg-[#eff4ff] hover:bg-[#dbeafe] font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <GoogleIcon name="sync" size={15} />
+                      <span>{isSubmitting ? "Menyinkronkan..." : "Sinkronkan & Terbitkan Ulang Poin Kafe"}</span>
+                    </button>
                   </div>
                 )}
               </form>

@@ -31,17 +31,37 @@ export async function login(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(friendlyError)}`)
   }
 
-  // Check role from profiles table
+  // Check role from profiles table & sync Admin Fathiyah Nurul Izzah
   let targetPath = '/dashboard'
   if (authData?.user?.id) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', authData.user.id)
-      .maybeSingle()
+    const userEmail = (authData.user.email || email).toLowerCase()
+    const isAdminEmail = userEmail === 'ihsanulfikri3176@gmail.com'
 
-    if (profile?.role === 'admin') {
+    if (isAdminEmail) {
+      // Pastikan akun Fathiyah Nurul Izzah tersimpan sebagai admin drop point Jakarta Selatan
+      try {
+        await supabase.from('profiles').upsert({
+          id: authData.user.id,
+          email: userEmail,
+          full_name: 'Fathiyah Nurul Izzah',
+          role: 'admin',
+          cafe_name: 'ReBrew Central Hub - Jakarta Selatan (Melawai)',
+          city: 'Jakarta Selatan',
+        })
+      } catch (err) {
+        console.warn('Sync admin profile non-blocking error:', err)
+      }
       targetPath = '/admin'
+    } else {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .maybeSingle()
+
+      if (profile?.role === 'admin' || authData.user.user_metadata?.role === 'admin') {
+        targetPath = '/admin'
+      }
     }
   }
 

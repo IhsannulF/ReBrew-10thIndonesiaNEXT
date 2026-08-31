@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { WASTE_CATEGORIES, DROP_POINTS } from '@/constants/wasteData'
 import { TransactionDetail, TransactionStatus, WasteCategoryKey } from '@/types/transaction'
@@ -20,16 +21,46 @@ export interface CreateDepositInput {
 }
 
 /**
- * Otomatis menolak penjemputan yang telah melewati batas jadwal waktu yang ditentukan
+ * Otomatis menolak penjemputan yang telah melewati batas jadwal toleransi wajar (hanya setelah 48 jam)
+ * dan memulihkan transaksi baru yang sempat tertolak otomatis karena perbedaan zona waktu/slot
  */
 export async function autoRejectExpiredPickups(supabase: any) {
   try {
     const now = new Date()
 
-    // 1. Ambil transaksi berstatus pending dengan metode penjemputan
+    // 1. Pulihkan tiket penjemputan yang dibuat dalam 48 jam terakhir yang sempat tertolak otomatis
+    try {
+      const { data: falselyRejected } = await supabase
+        .from('transactions')
+        .select('id, created_at, notes, method')
+        .eq('status', 'rejected')
+        .ilike('notes', '%Otomatis Ditolak%')
+
+      if (falselyRejected && falselyRejected.length > 0) {
+        for (const tx of falselyRejected) {
+          const createdAt = new Date(tx.created_at || Date.now())
+          const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
+          // Jika baru dibuat kurang dari 48 jam lalu, kembalikan ke status 'pending'
+          if (diffHours < 48) {
+            const cleanedNotes = (tx.notes || '').replace(/Otomatis Ditolak:[^|\]]+/g, '').trim()
+            await supabase
+              .from('transactions')
+              .update({
+                status: 'pending',
+                notes: cleanedNotes || 'Jadwal Penjemputan Armada Menunggu Konfirmasi',
+              })
+              .eq('id', tx.id)
+          }
+        }
+      }
+    } catch (recoverErr) {
+      console.warn('Recovery of rejected pickups non-blocking warning:', recoverErr)
+    }
+
+    // 2. Ambil transaksi berstatus pending dengan metode penjemputan
     const { data: pendingPickups, error } = await supabase
       .from('transactions')
-      .select('id, created_at, notes, type, status')
+      .select('id, created_at, notes, method, status')
       .eq('status', 'pending')
 
     if (error || !pendingPickups || pendingPickups.length === 0) return
@@ -37,42 +68,28 @@ export async function autoRejectExpiredPickups(supabase: any) {
     const expiredIds: string[] = []
 
     for (const tx of pendingPickups) {
-      const isPickup = tx.type === 'dijemput' || (tx.notes && tx.notes.includes('Dijemput'))
+      const isPickup = tx.method === 'dijemput' || (tx.notes && tx.notes.toLowerCase().includes('jemput'))
       if (!isPickup) continue
 
-      // Cek apakah ada jadwal spesifik di notes atau created_at
-      let isExpired = false
-      const notes = tx.notes || ''
+      const createdAt = new Date(tx.created_at || Date.now())
+      const diffHoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
 
-      // Cek apakah ada format [JADWAL_EXP: timestamp]
-      const expMatch = notes.match(/\[JADWAL_EXP:([^\]]+)\]/)
-      if (expMatch && expMatch[1]) {
-        const expTime = new Date(expMatch[1])
-        if (!isNaN(expTime.getTime()) && now.getTime() > expTime.getTime()) {
-          isExpired = true
-        }
-      } else {
-        // Fallback: Jika penjemputan sudah lebih dari 24 jam sejak dibuat dan belum diproses
-        const createdAt = new Date(tx.created_at || 0)
-        const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
-        if (diffHours >= 24) {
-          isExpired = true
-        }
+      // Transaksi yang baru dibuat kurang dari 48 jam TIDAK BOLEH ditolak otomatis
+      if (diffHoursSinceCreation < 48) {
+        continue
       }
 
-      if (isExpired) {
-        expiredIds.push(tx.id)
-      }
+      expiredIds.push(tx.id)
     }
 
-    // 2. Update seluruh transaksi penjemputan yang kedaluwarsa menjadi 'rejected'
+    // 3. Update transaksi yang benar-benar kedaluwarsa (> 48 jam tanpa penanganan)
     if (expiredIds.length > 0) {
       for (const id of expiredIds) {
         await supabase
           .from('transactions')
           .update({
             status: 'rejected',
-            notes: `Otomatis Ditolak: Melewati batas waktu jadwal penjemputan armada tanpa konfirmasi penyerahan sampah.`,
+            notes: `Otomatis Ditolak: Melewati batas waktu 48 jam penjemputan armada tanpa konfirmasi penyerahan sampah.`,
           })
           .eq('id', id)
       }
@@ -98,10 +115,9 @@ export async function createDepositTransaction(input: CreateDepositInput) {
     return { success: false, error: 'Anda harus login untuk menyetor sampah.' }
   }
 
-  // Generate random 6-character uppercase ticket code: RB-XXXXXX
+  // Generate random 6-digit uppercase ticket code: RB-XXXXXX
   const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
   const ticketCode = `RB-${randomCode}`
-  const txId = `tx-${Date.now()}-${randomCode}`
 
   // Cari nama kategori utama atau gabungan
   const activeCategories = Object.entries(input.weights).filter(([_, w]) => w > 0)
@@ -132,59 +148,76 @@ export async function createDepositTransaction(input: CreateDepositInput) {
       : `${scheduleLabel} [JADWAL_EXP:${scheduledExpIso}]`
   }
 
-  // Insert ke tabel transactions
-  const { data: txData, error: txError } = await supabase
-    .from('transactions')
-    .insert({
-      id: txId,
-      user_id: user.id,
-      type: input.method,
-      total_weight: input.totalWeight,
-      total_points: input.finalPoints,
-      co2_saved: input.totalCo2,
-      status: 'pending',
-      code: ticketCode,
-      pickup_address: input.method === 'dijemput' ? input.pickupAddress : null,
-      drop_point_id: input.method === 'drop_point' ? input.selectedDropPoint : null,
-      notes: notesPayload || null,
-      category: primaryCatObj?.name || 'Plastic Cup (PP/PET)',
-    })
-    .select()
-    .single()
+  // Resolusi drop point ID aman
+  let targetDropPointId: string | null = null
+  if (input.method === 'drop_point') {
+    targetDropPointId = input.selectedDropPoint || 'dp-central-hub-01'
+  }
 
+  // Payload utama sesuai skema PostgreSQL
+  const baseTxPayload: any = {
+    id: ticketCode,
+    user_id: user.id,
+    method: input.method,
+    total_weight_kg: input.totalWeight,
+    total_points: input.finalPoints,
+    total_co2_kg: input.totalCo2,
+    status: 'pending',
+    pickup_address: input.method === 'dijemput' ? input.pickupAddress : null,
+    drop_point_id: targetDropPointId,
+    notes: notesPayload || null,
+    category: primaryCatObj?.name || 'Plastic Cup (PP/PET)',
+    created_at: new Date().toISOString(),
+  }
+
+  // 1. Eksekusi insert transaksi
+  let { error: txError } = await supabase.from('transactions').insert(baseTxPayload)
+
+  // Fallback 1: Jika gagal karena foreign key drop_point_id
+  if (txError && txError.message?.includes('drop_point_id')) {
+    baseTxPayload.drop_point_id = null
+    const res = await supabase.from('transactions').insert(baseTxPayload)
+    txError = res.error
+  }
+
+  // Fallback 2: Jika gagal karena kolom category atau penamaan legacy
   if (txError) {
-    const { error: fallbackError } = await supabase.from('transactions').insert({
-      id: txId,
+    console.warn('First insert attempt failed, trying fallback schema...', txError.message)
+    const fallbackPayload: any = {
+      id: ticketCode,
       user_id: user.id,
-      status: 'pending',
-      total_weight: input.totalWeight,
+      method: input.method,
+      total_weight_kg: input.totalWeight,
       total_points: input.finalPoints,
+      total_co2_kg: input.totalCo2,
+      status: 'pending',
       notes: notesPayload || null,
-    })
-
-    if (fallbackError) {
-      console.error('Error creating transaction in Supabase:', txError)
+    }
+    const res2 = await supabase.from('transactions').insert(fallbackPayload)
+    if (res2.error) {
+      console.error('Fatal error creating transaction in Supabase:', res2.error)
+      return { success: false, error: res2.error.message || 'Gagal menyimpan transaksi ke database.' }
     }
   }
 
-  // Insert item ke transaction_items jika ada
+  // 2. Insert item ke transaction_items jika ada
   if (activeCategories.length > 0) {
     const itemsToInsert = activeCategories.map(([catId, weight]) => {
       const cat = WASTE_CATEGORIES.find((c) => c.id === catId)
       return {
-        id: `txi-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        transaction_id: txId,
+        transaction_id: ticketCode,
         category_id: catId,
-        category_name: cat?.name || catId,
-        weight: weight,
-        points: Math.round(weight * (cat?.pointPerKg || 1750)),
+        weight_kg: weight,
+        point_per_kg: cat?.pointPerKg || 1750,
+        points_earned: Math.round(weight * (cat?.pointPerKg || 1750)),
+        co2_saved_kg: Math.round(weight * (cat?.co2Factor || 1.2) * 10) / 10,
       }
     })
 
     try {
       await supabase.from('transaction_items').insert(itemsToInsert)
-    } catch {
-      // Ignored if transaction_items table is optional
+    } catch (itemErr) {
+      console.warn('Non-blocking: could not insert into transaction_items:', itemErr)
     }
   }
 
@@ -193,31 +226,42 @@ export async function createDepositTransaction(input: CreateDepositInput) {
   revalidatePath('/dashboard')
   revalidatePath('/admin')
   revalidatePath('/admin/verifikasi')
+  revalidatePath('/admin/logistik')
 
-  return { success: true, ticketCode, transactionId: txId }
+  return { success: true, ticketCode, transactionId: ticketCode }
 }
 
 // 2. Server Action: Ambil Riwayat Transaksi Milik User dari Supabase
 export async function getUserTransactionHistory(): Promise<TransactionDetail[]> {
   const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const userSupabase = createClient(cookieStore)
+  const db = createAdminClient()
 
   // Jalankan auto-reject untuk mengupdate status kadaluwarsa secara live
-  await autoRejectExpiredPickups(supabase)
+  await autoRejectExpiredPickups(db)
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await userSupabase.auth.getUser()
 
   if (!user) return []
 
-  const { data, error } = await supabase
+  let { data, error } = await db
     .from('transactions')
-    .select('*, drop_points(name, address), transaction_items(*)')
+    .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   if (error || !data || data.length === 0) {
+    const res = await userSupabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (res.data) data = res.data
+  }
+
+  if (!data || data.length === 0) {
     return []
   }
 
@@ -234,12 +278,24 @@ export async function getUserTransactionHistory(): Promise<TransactionDetail[]> 
       minute: '2-digit',
     })
 
-    // Map status
+    // Map status (dengan deteksi komprehensif verifikasi admin)
     let status: TransactionStatus = 'pending'
-    if (row.status === 'confirmed' || row.status === 'verified' || row.status === 'completed') {
+    if (
+      row.status === 'confirmed' ||
+      row.status === 'verified' ||
+      row.status === 'completed' ||
+      Boolean(row.verified_at) ||
+      (row.notes && row.notes.toLowerCase().includes('diverifikasi')) ||
+      (row.scale_model && row.scale_model.toLowerCase().includes('verified'))
+    ) {
       status = 'confirmed'
     } else if (row.status === 'rejected' || row.status === 'cancelled') {
       status = 'rejected'
+    }
+
+    // Auto-heal database record jika sudah diverifikasi tapi statusnya masih pending
+    if (status === 'confirmed' && row.status !== 'confirmed') {
+      db.from('transactions').update({ status: 'confirmed' }).eq('id', row.id).then(() => {})
     }
 
     // Map Category Key
@@ -254,23 +310,28 @@ export async function getUserTransactionHistory(): Promise<TransactionDetail[]> 
     // Drop Point Name
     const dropPointObj = DROP_POINTS.find((dp) => dp.id === row.drop_point_id)
     const dropPointName =
-      row.drop_points?.name || dropPointObj?.name || (row.type === 'drop_point' ? 'ReBrew Central Hub' : undefined)
+      row.drop_points?.name || dropPointObj?.name || (row.method === 'drop_point' || row.type === 'drop_point' ? 'ReBrew Central Hub' : undefined)
 
     // Deteksi apakah penolakan karena batas jadwal lewat
     const isExpired = (row.notes || '').toLowerCase().includes('melewati batas waktu jadwal')
 
+    const totalWeight = Number(row.total_weight_kg || row.actual_weight || row.total_weight || row.weight || 0)
+    const totalPoints = Number(row.total_points || row.points_earned || row.coins_earned || 0)
+    const totalCo2 = Number(row.total_co2_kg || row.co2_saved || (totalWeight * 1.2).toFixed(1))
+    const txMethod = (row.method || row.type || 'drop_point') === 'dijemput' ? 'dijemput' : 'drop_point'
+
     return {
-      id: row.code || row.id,
+      id: row.id || row.code,
       categoryKey,
       material: row.category || 'Plastic Cup (PP/PET)',
       date: dateStr,
       time: `${timeStr} WIB`,
       fullDate: `${dateStr}, ${timeStr} WIB`,
-      weightKg: Number(row.actual_weight || row.total_weight || row.weight || 0),
-      pointsEarned: Number(row.total_points || row.points_earned || row.coins_earned || 0),
-      co2SavedKg: Number(row.co2_saved || (Number(row.total_weight || 0) * 1.2).toFixed(1)),
+      weightKg: totalWeight,
+      pointsEarned: totalPoints,
+      co2SavedKg: totalCo2,
       status,
-      method: (row.type === 'dijemput' ? 'dijemput' : 'drop_point') as 'drop_point' | 'dijemput',
+      method: txMethod as 'drop_point' | 'dijemput',
       dropPointName,
       pickupAddress: row.pickup_address || undefined,
       notes: row.notes || undefined,

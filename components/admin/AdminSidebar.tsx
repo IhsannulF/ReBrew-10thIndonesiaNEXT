@@ -136,7 +136,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             Central Micro-Hub
           </span>
           <span className="text-xs font-semibold text-white truncate">
-            Surabaya Timur
+            {admin.hubLocation || "Jakarta Selatan (Melawai)"}
           </span>
         </div>
       </div>

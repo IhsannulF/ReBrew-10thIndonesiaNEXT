@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import {
   EcoScoreMetrics,
   WasteProjection,
@@ -190,18 +191,20 @@ function generatePersonalizedRecommendations(params: {
   ]
 }
 
+// 1. Ambil Data AI Insights Kafe dari Supabase
 export async function getUserAiInsightData(): Promise<UserAiInsightData> {
   const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+  const userSupabase = createClient(cookieStore)
+  const db = createAdminClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await userSupabase.auth.getUser()
 
   if (!user) {
     const defaultRecs = generatePersonalizedRecommendations({
-      cafeName: 'Kedai Kopi Mitra',
-      userCity: 'Surabaya',
+      cafeName: 'Mitra Kafe ReBrew',
+      userCity: 'Jakarta Selatan',
       saldoPoin: 0,
       currentKg: 0,
       txCount: 0,
@@ -209,14 +212,14 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
     })
 
     return {
-      cafeName: 'Kedai Kopi Mitra',
-      userName: 'Mitra ReBrew',
+      cafeName: 'Mitra Kafe ReBrew',
+      userName: 'Mitra Baru',
       saldoPoin: 0,
       totalKg: 0,
       streakDays: 0,
       userRank: 1,
       totalPartners: 1,
-      city: 'Surabaya',
+      city: 'Jakarta Selatan',
       ecoMetrics: {
         overallScore: 0,
         scoreLabel: 'Belum Ada Data Setoran',
@@ -240,11 +243,20 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
   }
 
   // 1. Fetch Profile
-  const { data: profile } = await supabase
+  let { data: profile } = await db
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .maybeSingle()
+
+  if (!profile) {
+    const res = await userSupabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle()
+    profile = res.data
+  }
 
   const cafeName =
     profile?.cafe_name ||
@@ -254,17 +266,26 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
     profile?.full_name ||
     user?.user_metadata?.full_name ||
     'Mitra ReBrew'
-  const userCity = profile?.city || user?.user_metadata?.city || 'Surabaya'
+  const userCity = profile?.city || user?.user_metadata?.city || 'Jakarta Selatan'
   const saldoPoin = Number(profile?.saldo_poin ?? 0)
   const totalKg = Number(profile?.total_kg ?? 0.0)
-  const streakDays = Number(profile?.active_streak_days ?? 0)
+  const streakDays = Number(profile?.active_streak_days ?? (totalKg > 0 ? 3 : 0))
 
   // 2. Query Leaderboard dari tabel profiles untuk menentukan peringkat akurat di database
-  const { data: dbProfiles } = await supabase
+  let { data: dbProfiles } = await db
     .from('profiles')
     .select('id, cafe_name, full_name, total_kg, city, role')
     .neq('role', 'admin')
     .order('total_kg', { ascending: false })
+
+  if (!dbProfiles) {
+    const res = await userSupabase
+      .from('profiles')
+      .select('id, cafe_name, full_name, total_kg, city, role')
+      .neq('role', 'admin')
+      .order('total_kg', { ascending: false })
+    dbProfiles = res.data
+  }
 
   let profileList = dbProfiles ? dbProfiles.filter((p: any) => p.role !== 'admin') : []
   if (profile?.role !== 'admin' && !profileList.some((p: any) => p.id === user.id)) {
@@ -286,10 +307,18 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
   const totalPartners = Math.max(1, profileList.length)
 
   // 3. Fetch User Transactions
-  const { data: txList } = await supabase
+  let { data: txList } = await db
     .from('transactions')
-    .select('total_weight_kg, total_points, total_co2_kg, status, category, created_at')
+    .select('total_weight_kg, actual_weight, total_points, total_co2_kg, status, category, created_at')
     .eq('user_id', user.id)
+
+  if (!txList) {
+    const res = await userSupabase
+      .from('transactions')
+      .select('total_weight_kg, actual_weight, total_points, total_co2_kg, status, category, created_at')
+      .eq('user_id', user.id)
+    txList = res.data
+  }
 
   const txCount = txList ? txList.length : 0
   const verifiedTx = txList ? txList.filter((t) => t.status === 'confirmed' || t.status === 'completed') : []
