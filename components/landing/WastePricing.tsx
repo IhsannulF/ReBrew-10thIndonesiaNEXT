@@ -22,18 +22,6 @@ const wastePrices = [
     coins: "5",
   },
   {
-    icon: "takeout_dining",
-    name: "Tutup Cup & Sedotan (HDPE/PP)",
-    description: "Lid plastik cembung/flat, seal cup, sedotan",
-    coins: "3",
-  },
-  {
-    icon: "package_2",
-    name: "Kardus & Karton Kemasan",
-    description: "Kardus susu, boks sirup, dan karton kering",
-    coins: "15",
-  },
-  {
     icon: "inventory_2",
     name: "Kaleng Minuman (Aluminium)",
     description: "Kaleng krimer kental manis, soda, dan susu evaporasi",

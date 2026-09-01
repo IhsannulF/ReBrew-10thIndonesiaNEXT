@@ -102,16 +102,16 @@ export const WasteRecyclingHero = ({ stats }: WasteRecyclingHeroProps): React.JS
           </div>
 
           {/* Statistics */}
-          <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-[#d8e6d9]/60 pt-8 w-full max-w-lg">
+          <dl className="mt-12 grid grid-cols-3 gap-3 sm:gap-6 border-t border-[#d8e6d9]/60 pt-8 w-full max-w-xl">
             {displayStats.map((statistic) => (
-              <div key={statistic.label} className="flex flex-col">
+              <div key={statistic.label} className="flex flex-col min-w-0">
                 <dt
-                  className="text-2xl font-bold text-[#2e7d32] sm:text-3xl"
+                  className="text-xl sm:text-2xl lg:text-[28px] font-bold text-[#2e7d32] whitespace-nowrap tracking-tight"
                   style={{ fontFamily: "var(--font-fraunces, serif)" }}
                 >
                   {statistic.value}
                 </dt>
-                <dd className="mt-1 text-xs text-[#6b7c6f] sm:text-sm font-medium">
+                <dd className="mt-1 text-xs text-[#6b7c6f] sm:text-sm font-medium whitespace-nowrap">
                   {statistic.label}
                 </dd>
               </div>
