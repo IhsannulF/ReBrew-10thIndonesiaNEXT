@@ -49,18 +49,24 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user }) => {
           </Link>
         </div>
 
-        {/* Desktop Left: Portal Title & Live Badge */}
+        {/* Desktop Left: Cafe Name & User Tier Badge */}
         <div className="hidden md:flex items-center gap-3">
-          <span className="text-sm font-bold text-[#0b1c30]">
-            Portal Mitra Kafe
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eff4ff] border border-[#adedd3] px-3 py-1 text-xs font-bold text-[#006c49]">
-            <span className="h-2 w-2 rounded-full bg-[#10b981] animate-pulse" />
-            Live Sync
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49]">
+              <GoogleIcon name="storefront" size={18} />
+            </div>
+            <span className="text-sm font-bold text-[#0b1c30]">
+              {user?.cafeName || "Kedai Kopi Mitra"}
+            </span>
+          </div>
+          {user?.tier && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#fef3c7] border border-[#fde68a] px-3 py-1 text-xs font-bold text-[#92400e]">
+              <span>{user.tier}</span>
+            </span>
+          )}
         </div>
 
-        {/* Right Section: Saldo & Quick Actions */}
+        {/* Right Section: Saldo */}
         <div className="flex items-center gap-3">
           {/* Quick Balance Pill */}
           <Link
@@ -78,15 +84,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user }) => {
                 (Rp {balanceIdr.toLocaleString("id-ID")})
               </span>
             </div>
-          </Link>
-
-          {/* Quick Add Button */}
-          <Link
-            href="/dashboard/setor"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-[#006c49] px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#005236]"
-          >
-            <GoogleIcon name="add" size={16} />
-            <span>Setor</span>
           </Link>
         </div>
       </header>

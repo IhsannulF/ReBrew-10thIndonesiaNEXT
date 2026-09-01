@@ -11,8 +11,6 @@ import { MetricCardsSection } from "./sections/MetricCardsSection";
 import { RecentTransactionsSection } from "./sections/RecentTransactionsSection";
 import { WasteCompositionSection } from "./sections/WasteCompositionSection";
 import { MonthlyTargetSection } from "./sections/MonthlyTargetSection";
-import { QuickActionsSection } from "./sections/QuickActionsSection";
-import { DeviceCollectorStatusSection } from "./sections/DeviceCollectorStatusSection";
 import { CafeLeaderboardSection } from "./sections/CafeLeaderboardSection";
 import { GamificationSection } from "./sections/GamificationSection";
 import { ShareImpactModal } from "./sections/ShareImpactModal";
@@ -109,33 +107,7 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
     <div className="w-full flex flex-col gap-6 pb-12 text-[#0b1c30]">
       {/* 1. Header & Welcome Area */}
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
-        <div className="flex flex-col gap-2 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eff4ff] border border-[#adedd3] px-3.5 py-1 text-xs font-bold text-[#006c49]">
-              <GoogleIcon name="storefront" size={15} />
-              <span className="truncate max-w-[200px] sm:max-w-none">{profile.cafeName}</span>
-            </span>
-            {profile.tierLabel ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#fef3c7] border border-[#fde68a] px-3 py-1 text-xs font-bold text-[#92400e]">
-                {profile.tierLabel}
-              </span>
-            ) : null}
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
-                isScaleOnline
-                  ? "bg-[#eff4ff] border-[#adedd3] text-[#006c49]"
-                  : "bg-[#ffe4e8] border-[#f43f5e]/30 text-[#8a0f2c]"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  isScaleOnline ? "bg-[#10b981] animate-pulse" : "bg-[#f43f5e]"
-                }`}
-              />
-              {isScaleOnline ? "IoT Timbangan Aktif" : "Timbangan Offline"}
-            </span>
-          </div>
-
+        <div className="flex flex-col gap-1 min-w-0">
           <h1
             className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0b1c30]"
             style={{ fontFamily: "var(--font-fraunces, serif)" }}
@@ -271,11 +243,9 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
               />
             </div>
 
-            {/* Right Sidebar Area: Target, Quick Actions & IoT Scale Status */}
+            {/* Right Sidebar Area: Target */}
             <div className="w-full lg:w-[330px] xl:w-[350px] shrink-0 flex flex-col gap-6">
               <MonthlyTargetSection target={activeData.target} />
-              <QuickActionsSection onOpenShareModal={() => setIsShareModalOpen(true)} />
-              <DeviceCollectorStatusSection deviceStatus={activeData.deviceStatus} />
             </div>
           </div>
 
