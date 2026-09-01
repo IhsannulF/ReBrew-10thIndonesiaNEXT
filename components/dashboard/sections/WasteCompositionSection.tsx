@@ -64,37 +64,37 @@ export const WasteCompositionSection: React.FC<WasteCompositionSectionProps> = (
 
   return (
     <section
-      className="flex w-full flex-col rounded-2xl border border-[#bbcabf]/40 bg-white p-6 sm:p-7 shadow-xs"
+      className="flex w-full flex-col rounded-2xl border border-[#bbcabf]/40 bg-white p-5 sm:p-6 shadow-xs"
       aria-labelledby="waste-distribution-heading"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-5 border-b border-[#bbcabf]/20">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shadow-2xs">
-            <GoogleIcon name="pie_chart" size={20} />
+      <div className="flex items-center justify-between gap-2 pb-4 border-b border-[#bbcabf]/20">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shrink-0 shadow-2xs">
+            <GoogleIcon name="pie_chart" size={18} />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2
               id="waste-distribution-heading"
-              className="text-base sm:text-lg font-bold text-[#0b1c30]"
+              className="text-sm sm:text-base font-bold text-[#0b1c30] truncate"
             >
-              Komposisi Kategori Sampah Kafe
+              Komposisi Sampah
             </h2>
-            <p className="text-xs sm:text-sm text-[#3c4a42] mt-0.5">
-              Pilah sampah berdasarkan kategori material bahan baku daur ulang
+            <p className="text-[11px] text-[#6c7a71] truncate">
+              Material bahan baku daur ulang
             </p>
           </div>
         </div>
 
-        <span className="self-start sm:self-auto text-xs sm:text-sm font-bold text-[#006c49] bg-[#eff4ff] px-3.5 py-1.5 rounded-xl border border-[#adedd3] shadow-2xs">
-          Total: {formatWeight(totalWasteKg)}
+        <span className="shrink-0 text-xs font-bold text-[#006c49] bg-[#eff4ff] px-2.5 py-1 rounded-xl border border-[#adedd3] shadow-2xs">
+          {formatWeight(totalWasteKg)}
         </span>
       </div>
 
       {/* Multi-segment Progress Bar */}
-      <div className="mt-6 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-3">
         {hasData ? (
-          <div className="h-4 w-full overflow-hidden rounded-full bg-[#f1f5f9] flex shadow-inner p-0.5">
+          <div className="h-3 w-full overflow-hidden rounded-full bg-[#f1f5f9] flex shadow-inner p-0.5">
             {composition.map((item) => (
               <div
                 key={item.key}
@@ -108,50 +108,47 @@ export const WasteCompositionSection: React.FC<WasteCompositionSectionProps> = (
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f8f9ff] border border-[#bbcabf]/30 text-xs text-[#3c4a42]">
-            <div className="flex items-center gap-2">
-              <GoogleIcon name="info" size={17} className="text-[#006c49]" />
-              <span>Belum ada setoran sampah. Komposisi akan terhitung otomatis saat Anda mulai menyetor.</span>
-            </div>
+          <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[#f8f9ff] border border-[#bbcabf]/30 text-xs text-[#3c4a42]">
+            <span>Belum ada setoran sampah. Komposisi akan terhitung otomatis saat Anda mulai menyetor.</span>
             <Link
               href="/dashboard/setor"
-              className="font-bold text-[#006c49] hover:underline shrink-0 ml-2"
+              className="font-bold text-[#006c49] hover:underline self-start"
             >
               Setor Sekarang →
             </Link>
           </div>
         )}
 
-        {/* 5-Category Legends Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-3">
+        {/* Vertical Category Legends Stack */}
+        <div className="grid grid-cols-1 gap-2 mt-1">
           {composition.map((item) => {
             const theme = getCategoryTheme(item.key);
             return (
               <div
                 key={item.key}
-                className={`flex items-center justify-between p-3.5 rounded-2xl border ${theme.border} ${theme.bg} transition-all hover:shadow-xs hover:-translate-y-0.5`}
+                className={`flex items-center justify-between p-2.5 sm:p-3 rounded-xl border ${theme.border} ${theme.bg} transition-all hover:shadow-xs`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span
-                    className="h-3.5 w-3.5 rounded-full shrink-0 shadow-xs"
+                    className="h-3 w-3 rounded-full shrink-0 shadow-xs"
                     style={{ backgroundColor: item.color }}
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs sm:text-sm font-bold text-[#0b1c30] truncate">
+                    <span className="text-xs font-bold text-[#0b1c30] truncate">
                       {item.name}
                     </span>
-                    <span className="text-[11px] text-[#3c4a42]">
+                    <span className="text-[10px] text-[#6c7a71]">
                       +{item.points} Poin/kg
                     </span>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end shrink-0 pl-2">
-                  <span className={`text-xs sm:text-sm font-black ${theme.text}`}>
+                <div className="flex items-baseline gap-1.5 shrink-0 pl-2">
+                  <span className={`text-xs font-black ${theme.text}`}>
                     {formatWeight(item.weightKg)}
                   </span>
-                  <span className="text-[11px] font-semibold text-[#3c4a42]">
-                    {item.percentage}%
+                  <span className="text-[10px] font-semibold text-[#6c7a71]">
+                    ({item.percentage}%)
                   </span>
                 </div>
               </div>

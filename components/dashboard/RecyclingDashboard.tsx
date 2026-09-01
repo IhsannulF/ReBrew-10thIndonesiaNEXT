@@ -234,27 +234,27 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
       {activeTab === "overview" ? (
         <div className="flex flex-col gap-6 w-full min-w-0">
           <div className="flex flex-col lg:flex-row gap-6 items-start w-full min-w-0">
-            {/* Left Main Area: Recent Transactions & Waste Breakdown */}
+            {/* Left Main Area: Recent Transactions & Sertifikat Eco-Partner */}
             <div className="flex-1 min-w-0 flex flex-col gap-6 w-full">
               <RecentTransactionsSection transactions={activeData.recentTransactions} />
+              
+              {/* Sertifikat Eco-Partner Berlevel Section */}
+              <EcoCertificateLevelSection
+                cafeName={profile.cafeName}
+                city={profile.city || "Surabaya"}
+                totalKg={activeData.stats.wasteKgThisMonth}
+              />
+            </div>
+
+            {/* Right Sidebar Area: Target & Komposisi Sampah */}
+            <div className="w-full lg:w-[340px] xl:w-[370px] shrink-0 flex flex-col gap-6">
+              <MonthlyTargetSection target={activeData.target} />
               <WasteCompositionSection
                 composition={activeData.wasteComposition}
                 totalWasteKg={activeData.stats.wasteKgThisMonth}
               />
             </div>
-
-            {/* Right Sidebar Area: Target */}
-            <div className="w-full lg:w-[330px] xl:w-[350px] shrink-0 flex flex-col gap-6">
-              <MonthlyTargetSection target={activeData.target} />
-            </div>
           </div>
-
-          {/* Sertifikat Eco-Partner Berlevel Section */}
-          <EcoCertificateLevelSection
-            cafeName={profile.cafeName}
-            city={profile.city || "Surabaya"}
-            totalKg={activeData.stats.wasteKgThisMonth}
-          />
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 items-start w-full min-w-0">
