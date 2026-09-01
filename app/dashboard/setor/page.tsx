@@ -43,9 +43,10 @@ export default function SetorSampahPage() {
   const [simMonthlyKg, setSimMonthlyKg] = useState<number>(50);
   const [showSimCard, setShowSimCard] = useState<boolean>(true);
 
-  // Perhitungan simulasi bulanan (asumsi mix rata-rata offtaker Rp 5.000 / kg)
+  // Perhitungan simulasi bulanan (asumsi basis cup plastik Rp 5.000 / kg, 15 poin/kg, 1 Poin = Rp 35)
   const simOfftakerGross = simMonthlyKg * 5000;
-  const simShopReward = Math.round(simOfftakerGross * shareRate);
+  const simShopPoints = Math.round(simMonthlyKg * 15);
+  const simShopReward = simShopPoints * 35;
   const simReBrewGrossMargin = simOfftakerGross - simShopReward;
   const simCo2Saved = Math.round(simMonthlyKg * 1.2 * 10) / 10;
 
@@ -107,7 +108,7 @@ export default function SetorSampahPage() {
                 Simulasi Skala Bulanan: Proyeksi Nilai Daur Ulang Kafe
               </h2>
               <p className="text-xs text-[#3c4a42] mt-1 max-w-2xl">
-                ReBrew mengkonversi sampah kafe ke offtaker recycler dengan rentang pembagian poin <strong>20% – 40% (standar {Math.round(shareRate * 100)}%)</strong>. 1 Poin = Rp 1 yang langsung masuk ke saldo kafe.
+                ReBrew mengkonversi sampah kafe ke offtaker recycler dengan skema poin transparan (Cup Plastik 15 pt/kg, Ampas Kopi 10 pt/kg). <strong>1 Poin = Rp 35</strong> yang dapat dicairkan langsung ke saldo kas kafe.
               </p>
 
               {/* Slider Simulasi Bulanan & Buffer Share Rate */}
@@ -136,27 +137,16 @@ export default function SetorSampahPage() {
 
                 <div className="bg-white/80 backdrop-blur-xs p-3 rounded-2xl border border-[#bbcabf]/30">
                   <div className="flex justify-between text-xs font-bold text-[#0b1c30] mb-1">
-                    <span>Buffer Share Rate:</span>
-                    <span className="text-[#006c49]">{Math.round(shareRate * 100)}% dari Offtaker</span>
+                    <span>Rate Poin Insentif:</span>
+                    <span className="text-[#006c49]">15 Poin/kg (Rp 525/kg)</span>
                   </div>
                   <div className="flex gap-1.5 mt-2">
-                    {[0.25, 0.35, 0.40].map((rate) => (
-                      <button
-                        key={rate}
-                        type="button"
-                        onClick={() => setShareRate(rate)}
-                        className={`flex-1 py-1 rounded-lg text-xs font-bold transition-all ${
-                          shareRate === rate
-                            ? "bg-[#006c49] text-white shadow-2xs"
-                            : "bg-[#f8f9ff] text-[#3c4a42] border border-[#bbcabf]/30 hover:bg-white"
-                        }`}
-                      >
-                        {rate * 100}%
-                      </button>
-                    ))}
+                    <div className="flex-1 py-1 rounded-lg text-xs font-bold bg-[#006c49] text-white text-center shadow-2xs">
+                      1 Poin = Rp 35
+                    </div>
                   </div>
                   <span className="text-[10px] text-[#6c7a71] block mt-1">
-                    Buffer otomatis untuk fluktuasi pasar daur ulang
+                    Standar konversi poin ke kas tunai operasional
                   </span>
                 </div>
               </div>
@@ -182,7 +172,7 @@ export default function SetorSampahPage() {
                   Rp {simShopReward.toLocaleString("id-ID")}
                 </div>
                 <div className="text-[10px] text-[#306d58]">
-                  +{simShopReward.toLocaleString("id-ID")} Poin ({Math.round(shareRate * 100)}%)
+                  +{simShopPoints.toLocaleString("id-ID")} Poin (Rp 35/pt)
                 </div>
               </div>
 

@@ -175,11 +175,11 @@ export async function generateGeminiStrategicInsights(customContext?: GeminiAdvi
             ],
         revenueOpportunities: isNewAccount
           ? [
-              'Kumpulkan 5 kg cup plastik pertama untuk klaim hingga 1.750 Poin ReBrew.',
+              'Kumpulkan 5 kg cup plastik pertama untuk klaim hingga 75 Poin ReBrew.',
               'Tukarkan poin hasil setor sampah menjadi saldo rupiah gratis biaya admin.'
             ]
           : [
-              `Tukarkan saldo ${saldoPoin} Poin menjadi Rp ${(saldoPoin * 50).toLocaleString('id-ID')} uang kas di menu Tarik Uang.`,
+              `Tukarkan saldo ${saldoPoin} Poin menjadi Rp ${(saldoPoin * 35).toLocaleString('id-ID')} uang kas di menu Tarik Uang.`,
               `Tingkatkan frekuensi setor melalui ${favoriteMethod} untuk bonus poin sirkular.`
             ],
         esgReadiness: isNewAccount ? 'Tahap Onboarding: Menunggu Setoran Pertama' : 'Grade A+: Siap Verifikasi Kemitraan ESG 2026',
@@ -200,7 +200,7 @@ DATA LENGKAP MITRA KAFE DARI DATABASE:
 - Kota Operasional: "${userCity}"
 - Status Akun: ${isNewAccount ? 'Mitra Baru Terdaftar (0 kg sampah, belum pernah setor)' : 'Mitra Aktif'}
 - Total Sampah Didaur Ulang: ${totalKg} kg (Estimasi Reduksi Emisi: ${(totalKg * 1.2).toFixed(1)} kg CO₂e)
-- Saldo Poin Kas Aktif: ${saldoPoin} Poin (Nilai Tukar Kas Bersih: Rp ${(saldoPoin * 50).toLocaleString('id-ID')})
+- Saldo Poin Kas Aktif: ${saldoPoin} Poin (Nilai Tukar Kas Bersih: Rp ${(saldoPoin * 35).toLocaleString('id-ID')})
 - Target Bulanan: ${targetKg} kg (Progres: ${targetProgressPercent}%, Status: ${isTargetAchieved ? 'Target Tercapai' : 'Sedang Berjalan'})
 - Riwayat Setoran: Total ${txCount} transaksi (${confirmedTxCount} berhasil terverifikasi)
 - Kategori Sampah yang Pernah Disetor: ${depositedCategories.length > 0 ? depositedCategories.join(', ') : 'Belum ada setoran'}
@@ -339,11 +339,11 @@ KEMBALIKAN RESPON HANYA BERUPA FORMAT JSON MURNI VALID:
           ],
       revenueOpportunities: isNewAccount
         ? [
-            'Kumpulkan 5 kg cup plastik pertama untuk klaim hingga 1.750 Poin ReBrew.',
+            'Kumpulkan 5 kg cup plastik pertama untuk klaim hingga 75 Poin ReBrew.',
             'Tukarkan poin hasil setor sampah menjadi saldo rupiah gratis biaya admin.'
           ]
         : [
-            `Tukarkan saldo ${saldoPoin} Poin menjadi Rp ${(saldoPoin * 50).toLocaleString('id-ID')} uang kas di menu Tarik Uang.`,
+            `Tukarkan saldo ${saldoPoin} Poin menjadi Rp ${(saldoPoin * 35).toLocaleString('id-ID')} uang kas di menu Tarik Uang.`,
             `Tingkatkan frekuensi setor melalui ${favoriteMethod} untuk bonus poin sirkular.`
           ],
       esgReadiness: isNewAccount ? 'Tahap Onboarding: Menunggu Setoran Pertama' : 'Grade A+: Siap Kemitraan Sirkular ESG 2026',

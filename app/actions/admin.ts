@@ -108,23 +108,26 @@ export async function getAdminVerificationTickets(): Promise<AdminTicketItem[]> 
     const cafeCity = userProfile?.city || 'Jakarta Selatan'
     const isPickup = tx.method === 'dijemput' || tx.type === 'dijemput' || (tx.notes && tx.notes.toLowerCase().includes('jemput'))
 
-    // Tentukan kategori & rate harga offtaker / poin per kg
+    // Tentukan kategori & rate harga offtaker / poin per kg (1 Poin = Rp 35)
     const catName = tx.category || 'Plastic Cup (PP/PET)'
     const catLower = catName.toLowerCase()
-    let pointsRatePerKg = 1750
+    let pointsRatePerKg = 15 // Cup Plastik (Rp 525/kg)
     let offtakerPricePerKg = 5000
 
-    if (catLower.includes('botol')) {
-      pointsRatePerKg = 1750
-      offtakerPricePerKg = 5000
-    } else if (catLower.includes('ampas')) {
-      pointsRatePerKg = 1050
+    if (catLower.includes('ampas')) {
+      pointsRatePerKg = 10 // Ampas Kopi (Rp 350/kg)
+      offtakerPricePerKg = 3000
+    } else if (catLower.includes('botol')) {
+      pointsRatePerKg = 5 // Botol PET (Rp 175/kg)
+      offtakerPricePerKg = 6000
+    } else if (catLower.includes('tutup')) {
+      pointsRatePerKg = 3 // Tutup Cup (Rp 105/kg)
       offtakerPricePerKg = 3000
     } else if (catLower.includes('kardus')) {
-      pointsRatePerKg = 700
+      pointsRatePerKg = 15 // Kardus (Rp 525/kg)
       offtakerPricePerKg = 2000
     } else if (catLower.includes('kaleng')) {
-      pointsRatePerKg = 4900
+      pointsRatePerKg = 20 // Kaleng (Rp 700/kg)
       offtakerPricePerKg = 14000
     }
 
@@ -252,12 +255,14 @@ export async function verifyDepositTransaction(input: {
     return { success: false, error: 'Berat aktual harus lebih besar dari 0 kg.' }
   }
 
-  // Hitung poin dan emisi CO2
+  // Hitung poin dan emisi CO2 (1 Poin = Rp 35)
   const catName = (tx.category || '').toLowerCase()
-  let pointsRatePerKg = 1750
-  if (catName.includes('ampas')) pointsRatePerKg = 1050
-  else if (catName.includes('botol')) pointsRatePerKg = 2100
-  else if (catName.includes('tutup')) pointsRatePerKg = 1050
+  let pointsRatePerKg = 15 // Cup Plastik (Rp 525/kg)
+  if (catName.includes('ampas')) pointsRatePerKg = 10 // Ampas Kopi (Rp 350/kg)
+  else if (catName.includes('botol')) pointsRatePerKg = 5 // Botol PET (Rp 175/kg)
+  else if (catName.includes('tutup')) pointsRatePerKg = 3 // Tutup Cup (Rp 105/kg)
+  else if (catName.includes('kardus')) pointsRatePerKg = 15 // Kardus (Rp 525/kg)
+  else if (catName.includes('kaleng')) pointsRatePerKg = 20 // Kaleng (Rp 700/kg)
 
   const calculatedPoints = Math.round(actualWeight * pointsRatePerKg)
   const calculatedCo2 = Math.round(actualWeight * 1.2 * 10) / 10

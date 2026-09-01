@@ -23,10 +23,18 @@ export const ShareImpactModal: React.FC<ShareImpactModalProps> = ({
 
   if (!isOpen) return null;
 
+  const getBaseUrl = () => {
+    if (typeof window !== "undefined" && window.location.origin) {
+      return window.location.origin;
+    }
+    return "https://re-brew-10th-indonesia-next.vercel.app";
+  };
+
+  const partnerId = user.id || "e4ea8d6e-99ce-494c-8176-88ffdc1099d5";
+  const shareUrl = `${getBaseUrl()}/eco-partner/${partnerId}`;
+
   const handleCopyLink = () => {
-    navigator.clipboard?.writeText(
-      `https://rebrew.id/eco-partner/${user.id || "kopiselamat"}`
-    );
+    navigator.clipboard?.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -141,7 +149,7 @@ export const ShareImpactModal: React.FC<ShareImpactModalProps> = ({
             <div className="flex items-center gap-2">
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(
-                  `Kedai ${user.cafeName} telah mendaur ulang ${stats.wasteKgThisMonth} kg limbah plastik bersama @rebrew.id! Cek aksi kami di https://rebrew.id`
+                  `Kedai ${user.cafeName} telah mendaur ulang ${stats.wasteKgThisMonth} kg limbah plastik bersama ReBrew! Cek sertifikat dan aksi sirkular kami di: ${shareUrl}`
                 )}`}
                 target="_blank"
                 rel="noreferrer"

@@ -70,7 +70,7 @@ export default async function DashboardLayout({
     cafeName: cafeName,
     tier: tierName,
     balanceCoins: saldoPoin,
-    balanceIdr: saldoPoin * 50,
+    balanceIdr: saldoPoin * 35,
   };
 
   return (

@@ -115,8 +115,8 @@ function generatePersonalizedRecommendations(params: {
     ]
   }
 
-  // Rekomendasi Dinamis untuk Akun Aktif
-  const cashValue = (saldoPoin * 50).toLocaleString('id-ID')
+  // Rekomendasi Dinamis untuk Akun Aktif (1 Poin = Rp 35)
+  const cashValue = (saldoPoin * 35).toLocaleString('id-ID')
   const co2Saved = (currentKg * 1.2).toFixed(1)
 
   return [

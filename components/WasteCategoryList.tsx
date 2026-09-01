@@ -29,7 +29,7 @@ export const WasteCategoryList: React.FC<WasteCategoryListProps> = ({
             Kategori Sampah & Estimasi Berat
           </h2>
           <p className="text-xs text-[#6c7a71] mt-0.5">
-            Poin dihitung berdasarkan nilai daur ulang offtaker ({Math.round(shareRate * 100)}% revenue share, 1 Poin = Rp 1)
+            Poin insentif sirkular (1 Poin = Rp 35, dapat dicairkan langsung ke kas kafe)
           </p>
         </div>
         {resetWeights && (
@@ -50,10 +50,10 @@ export const WasteCategoryList: React.FC<WasteCategoryListProps> = ({
           const currentWeight = weights[cat.id] || 0;
           const hasWeight = currentWeight > 0;
           
-          // Kalkulasi Poin & Rupiah per kg dinamis
-          const pointPerKg = Math.round(cat.offtakerPricePerKg * shareRate);
+          // Kalkulasi Poin & Rupiah (1 Poin = Rp 35)
+          const pointPerKg = cat.pointPerKg;
           const subtotalPoints = Math.round(currentWeight * pointPerKg);
-          const subtotalRupiah = subtotalPoints; // 1 Poin = Rp 1
+          const subtotalRupiah = subtotalPoints * 35;
 
           return (
             <div
@@ -84,7 +84,7 @@ export const WasteCategoryList: React.FC<WasteCategoryListProps> = ({
                         {cat.name}
                       </h3>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] text-[#006c49] border border-[#006c49]/20">
-                        {pointPerKg.toLocaleString("id-ID")} Poin/kg (Rp {pointPerKg.toLocaleString("id-ID")})
+                        {pointPerKg} Poin/kg (Rp {(pointPerKg * 35).toLocaleString("id-ID")}/kg)
                       </span>
                     </div>
                     <p className="text-xs text-[#6c7a71] mt-0.5 line-clamp-1">

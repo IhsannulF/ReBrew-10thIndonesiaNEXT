@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import {
   WASTE_CATEGORIES,
   DROP_POINTS,
+  COIN_VALUE_IDR,
   DEFAULT_SHARE_RATE,
   getMinPickupWeight,
 } from "@/constants/wasteData";
@@ -11,7 +12,7 @@ import { createDepositTransaction } from "@/app/actions/transactions";
 export interface DepositSummary {
   totalWeight: number;
   finalPoints: number;
-  equivalentRupiah: number; // 1 Poin = Rp 1
+  equivalentRupiah: number; // 1 Poin = Rp 35
   totalOfftakerGross: number; // Nilai kotor penjualan ReBrew ke offtaker
   rebrewGrossMargin: number;  // Margin kotor ReBrew untuk operasional & logistik
   totalCo2: number;
@@ -27,13 +28,13 @@ export interface DepositSummary {
 export type DepositMethod = "drop_point" | "dijemput";
 
 export function useDepositCalculator() {
-  // State Input Berat per Kategori (kg) - Default set 5 kg cup plastik & 2 kg botol
+  // State Input Berat per Kategori (kg) - Default set 5 kg cup plastik & 2 kg ampas kopi
   const [weights, setWeights] = useState<Record<string, number>>({
     "cup-plastik": 5.0,
-    "botol-plastik": 2.0,
+    "ampas-kopi": 2.0,
   });
 
-  // State Rentang Persentase Sharing (20% - 40%, default 35%)
+  // State Rentang Persentase Sharing
   const [shareRate, setShareRate] = useState<number>(DEFAULT_SHARE_RATE);
 
   // State Metode Penyetoran
@@ -95,8 +96,8 @@ export function useDepositCalculator() {
         const grossValue = w * cat.offtakerPricePerKg;
         totalOfftakerGross += grossValue;
         
-        // Poin per kategori = berat * harga offtaker * share rate (default 35%)
-        const categoryPoints = Math.round(grossValue * shareRate);
+        // Poin per kategori = berat * cat.pointPerKg (Cup: 15 pt/kg, Ampas: 10 pt/kg, Botol: 5 pt/kg)
+        const categoryPoints = Math.round(w * cat.pointPerKg);
         rawPoints += categoryPoints;
         totalCo2 += w * cat.co2Factor;
       }
@@ -110,10 +111,8 @@ export function useDepositCalculator() {
 
     const weightDeficit = Math.max(0, Math.round((minWeightRequired - totalWeight) * 10) / 10);
 
-    // Drop Point: 100% Poin utuh karena logistik ditanggung coffee shop
-    // Dijemput: Poin tetap sesuai rate poin transparan
     const finalPoints = rawPoints;
-    const equivalentRupiah = finalPoints; // 1 Poin = Rp 1
+    const equivalentRupiah = finalPoints * COIN_VALUE_IDR; // 1 Poin = Rp 35
     const rebrewGrossMargin = Math.max(0, totalOfftakerGross - equivalentRupiah);
 
     return {

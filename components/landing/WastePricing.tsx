@@ -7,25 +7,37 @@ const wastePrices = [
     icon: "local_cafe",
     name: "Plastic Cup (PP/PET)",
     description: "Cup kopi takeaway & cup boba bersih",
-    coins: "35",
-  },
-  {
-    icon: "water_bottle",
-    name: "Botol Plastik (PET Bening)",
-    description: "Botol air mineral, botol sirup bening",
-    coins: "42",
-  },
-  {
-    icon: "takeout_dining",
-    name: "Tutup Cup & Sedotan (HDPE/PP)",
-    description: "Lid plastik cembung/flat, seal cup, sedotan",
-    coins: "21",
+    coins: "15",
   },
   {
     icon: "compost",
     name: "Ampas Kopi (Spent Grounds)",
     description: "Ampas espresso & manual brew untuk pupuk & bio-arang",
-    coins: "21",
+    coins: "10",
+  },
+  {
+    icon: "water_bottle",
+    name: "Botol Plastik (PET Bening)",
+    description: "Botol air mineral, botol sirup bening",
+    coins: "5",
+  },
+  {
+    icon: "takeout_dining",
+    name: "Tutup Cup & Sedotan (HDPE/PP)",
+    description: "Lid plastik cembung/flat, seal cup, sedotan",
+    coins: "3",
+  },
+  {
+    icon: "package_2",
+    name: "Kardus & Karton Kemasan",
+    description: "Kardus susu, boks sirup, dan karton kering",
+    coins: "15",
+  },
+  {
+    icon: "inventory_2",
+    name: "Kaleng Minuman (Aluminium)",
+    description: "Kaleng krimer kental manis, soda, dan susu evaporasi",
+    coins: "20",
   },
 ];
 
@@ -54,13 +66,13 @@ export const WastePricing = (): React.JSX.Element => {
           </h2>
 
           <p className="mt-4 text-base leading-relaxed text-white/80">
-            Kami memberikan penawaran nilai terbaik untuk setiap kilogram sampah daur ulangmu.{" "}
-            <span className="font-bold text-[#ffc107]">1 koin = Rp 50</span> yang bisa kamu cairkan kapan saja tanpa biaya tersembunyi.
+            Kami memberikan penawaran nilai terbaik untuk setiap kilogram sampah daur ulang tokomu.{" "}
+            <span className="font-bold text-[#ffc107]">1 koin = Rp 35</span> yang bisa kamu cairkan kapan saja tanpa potongan tersembunyi.
           </p>
 
           <div className="mt-8">
             <Link
-              href="/login"
+              href="/daftar"
               className="inline-flex items-center gap-2 rounded-[10px] bg-[#ffc107] px-6 py-3.5 text-sm font-bold text-[#663c00] shadow-md transition-all hover:bg-[#ffcd38] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-white"
             >
               <span>Mulai Setor Sekarang</span>
@@ -105,7 +117,7 @@ export const WastePricing = (): React.JSX.Element => {
                   </span>
                 </div>
                 <span className="text-[11px] text-white/60">
-                  ≈ Rp {parseInt(waste.coins) * 50}/kg
+                  ≈ Rp {(parseInt(waste.coins) * 35).toLocaleString("id-ID")}/kg
                 </span>
               </div>
             </article>

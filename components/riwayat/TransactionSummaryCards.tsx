@@ -50,7 +50,7 @@ export const TransactionSummaryCards: React.FC<TransactionSummaryCardsProps> = (
             <span className="text-xs font-medium text-[#78350f]">pt</span>
           </div>
           <span className="text-[11px] text-[#b45309] font-medium mt-0.5">
-            ≈ Rp {(stats.totalPointsEarned * 50).toLocaleString("id-ID")}
+            ≈ Rp {(stats.totalPointsEarned * 35).toLocaleString("id-ID")}
           </span>
         </div>
       </div>

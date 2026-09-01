@@ -136,17 +136,22 @@ export function useTransactionHistory(
         return true;
       })
       .sort((a, b) => {
+        const timeA = new Date(a.createdAt || a.rawCreatedAt || a.fullDate || a.date).getTime() || 0;
+        const timeB = new Date(b.createdAt || b.rawCreatedAt || b.fullDate || b.date).getTime() || 0;
+
         if (filters.sortBy === "highest_points") {
-          return b.pointsEarned - a.pointsEarned;
+          const diff = b.pointsEarned - a.pointsEarned;
+          return diff !== 0 ? diff : timeB - timeA;
         }
         if (filters.sortBy === "highest_weight") {
-          return b.weightKg - a.weightKg;
+          const diff = b.weightKg - a.weightKg;
+          return diff !== 0 ? diff : timeB - timeA;
         }
         if (filters.sortBy === "oldest") {
-          return a.id.localeCompare(b.id);
+          return timeA - timeB;
         }
-        // Default latest
-        return b.id.localeCompare(a.id);
+        // Default latest: Transaksi terbaru selalu di awal / paling atas
+        return timeB - timeA;
       });
   }, [transactions, filters]);
 

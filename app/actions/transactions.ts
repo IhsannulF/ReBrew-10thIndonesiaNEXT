@@ -208,8 +208,8 @@ export async function createDepositTransaction(input: CreateDepositInput) {
         transaction_id: ticketCode,
         category_id: catId,
         weight_kg: weight,
-        point_per_kg: cat?.pointPerKg || 1750,
-        points_earned: Math.round(weight * (cat?.pointPerKg || 1750)),
+        point_per_kg: cat?.pointPerKg || 15,
+        points_earned: Math.round(weight * (cat?.pointPerKg || 15)),
         co2_saved_kg: Math.round(weight * (cat?.co2Factor || 1.2) * 10) / 10,
       }
     })
@@ -327,6 +327,8 @@ export async function getUserTransactionHistory(): Promise<TransactionDetail[]> 
       date: dateStr,
       time: `${timeStr} WIB`,
       fullDate: `${dateStr}, ${timeStr} WIB`,
+      createdAt: row.created_at || new Date().toISOString(),
+      rawCreatedAt: row.created_at || new Date().toISOString(),
       weightKg: totalWeight,
       pointsEarned: totalPoints,
       co2SavedKg: totalCo2,

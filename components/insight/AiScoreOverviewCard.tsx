@@ -145,7 +145,7 @@ export const AiScoreOverviewCard: React.FC<AiScoreOverviewCardProps> = ({
                 +{projection.projectedPoints} <span className="text-xs font-semibold">pt</span>
               </span>
               <span className="text-[10px] text-[#b45309] block mt-0.5">
-                ≈ Rp {(projection.projectedPoints * 50).toLocaleString("id-ID")}
+                ≈ Rp {(projection.projectedPoints * 35).toLocaleString("id-ID")}
               </span>
             </div>
           </div>

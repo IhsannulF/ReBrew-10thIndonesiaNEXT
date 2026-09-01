@@ -1,7 +1,7 @@
 import { PaymentChannel, PayoutTransaction } from "@/types/payout";
 
-export const COIN_RATE = 50; // 1 Poin = Rp 50
-export const MIN_WITHDRAW_POINTS = 200; // Minimal 200 poin = Rp 10.000
+export const COIN_RATE = 35; // 1 Poin = Rp 35
+export const MIN_WITHDRAW_POINTS = 100; // Minimal 100 poin = Rp 3.500
 
 export const PAYMENT_CHANNELS: PaymentChannel[] = [
   // Banks

@@ -16,6 +16,8 @@ export interface TransactionDetail {
   date: string;
   time: string;
   fullDate: string;
+  createdAt?: string;
+  rawCreatedAt?: string;
   weightKg: number;
   pointsEarned: number;
   co2SavedKg: number;

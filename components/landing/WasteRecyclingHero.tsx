@@ -4,38 +4,52 @@ import React, { useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { GoogleIcon } from "@/components/ui/GoogleIcon";
+import type { LandingStatistics } from "@/app/actions/landing";
 
-const statistics = [
-  { value: "24.8T", label: "Ton Sampah Terkelola" },
-  { value: "1.250+", label: "Drop Point Aktif" },
-  { value: "98%", label: "Kepuasan Pengguna" },
-];
+interface WasteRecyclingHeroProps {
+  stats?: LandingStatistics | null;
+}
 
-const rewardLabels = [
-  {
-    icon: "water_bottle",
-    text: "Plastik → 15 koin/kg",
-    position: "top-4 -left-4 sm:-left-8",
-  },
-  {
-    icon: "package_2",
-    text: "Kardus → 5 koin/kg",
-    position: "bottom-10 -left-6 sm:-left-12",
-  },
-  {
-    icon: "inventory_2",
-    text: "Kaleng → 10 koin/kg",
-    position: "top-28 -right-4 sm:-right-8",
-  },
-];
-
-export const WasteRecyclingHero = (): React.JSX.Element => {
+export const WasteRecyclingHero = ({ stats }: WasteRecyclingHeroProps): React.JSX.Element => {
   const handleScrollTo = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
   }, []);
+
+  const displayStats = [
+    {
+      value: stats?.formattedWasteText || "52.5 kg",
+      label: "Sampah Terkelola",
+    },
+    {
+      value: stats?.formattedDropPointsText || "2 Central Hub",
+      label: "Titik Kumpul Aktif",
+    },
+    {
+      value: `${stats?.userSatisfactionPercent || 99}%`,
+      label: "Kepuasan Mitra",
+    },
+  ];
+
+  const floatingBadges = stats?.topRewards || [
+    {
+      icon: "coffee",
+      coinsText: "Cup Plastik → 15 koin/kg",
+      position: "top-4 -left-4 sm:-left-8",
+    },
+    {
+      icon: "compost",
+      coinsText: "Ampas Kopi → 10 koin/kg",
+      position: "top-28 -right-4 sm:-right-8",
+    },
+    {
+      icon: "local_drink",
+      coinsText: "Botol PET → 5 koin/kg",
+      position: "bottom-10 -left-6 sm:-left-12",
+    },
+  ];
 
   return (
     <section
@@ -48,7 +62,9 @@ export const WasteRecyclingHero = (): React.JSX.Element => {
           {/* Badge */}
           <div className="inline-flex items-center gap-1.5 rounded-full bg-[#e8f5e9] px-3.5 py-1 text-xs font-bold text-[#2e7d32]">
             <GoogleIcon name="eco" size={16} filled className="text-[#2e7d32]" />
-            <span>Lebih dari 12.000 pengguna aktif</span>
+            <span>
+              {stats?.formattedMitraText ? `${stats.formattedMitraText} Aktif Terdaftar` : "Ekosistem Sirkular Coffee Shop & F&B"}
+            </span>
           </div>
 
           {/* Heading */}
@@ -63,14 +79,14 @@ export const WasteRecyclingHero = (): React.JSX.Element => {
 
           {/* Description */}
           <p className="mt-4 max-w-xl text-base text-[#6b7c6f] sm:text-lg leading-relaxed">
-            Timbangan IoT kami otomatis menghitung berat sampahmu. Koin langsung
-            masuk dan dapat ditarik kapan saja ke rekening bank atau e-wallet.
+            Pilah limbah cup plastik PP, botol PET, dan ampas kopi dari tokomu. 
+            Timbangan terverifikasi di Micro-Hub dan koin langsung masuk senilai <strong className="text-[#2e7d32] font-semibold">Rp 35/koin</strong> siap ditarik ke rekening bank atau e-wallet.
           </p>
 
           {/* Action Buttons */}
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
             <Link
-              href="/login"
+              href="/daftar"
               className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#2e7d32] px-6 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:bg-[#256829] hover:shadow-lg focus-visible:outline-2 focus-visible:outline-[#2e7d32]"
             >
               <span>Mulai Sekarang</span>
@@ -87,7 +103,7 @@ export const WasteRecyclingHero = (): React.JSX.Element => {
 
           {/* Statistics */}
           <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-[#d8e6d9]/60 pt-8 w-full max-w-lg">
-            {statistics.map((statistic) => (
+            {displayStats.map((statistic) => (
               <div key={statistic.label} className="flex flex-col">
                 <dt
                   className="text-2xl font-bold text-[#2e7d32] sm:text-3xl"
@@ -95,7 +111,7 @@ export const WasteRecyclingHero = (): React.JSX.Element => {
                 >
                   {statistic.value}
                 </dt>
-                <dd className="mt-1 text-xs text-[#6b7c6f] sm:text-sm">
+                <dd className="mt-1 text-xs text-[#6b7c6f] sm:text-sm font-medium">
                   {statistic.label}
                 </dd>
               </div>
@@ -125,16 +141,16 @@ export const WasteRecyclingHero = (): React.JSX.Element => {
           </div>
 
           {/* Floating Reward Badges */}
-          {rewardLabels.map((reward) => (
+          {floatingBadges.map((reward) => (
             <div
-              key={reward.text}
+              key={reward.coinsText}
               className={`absolute ${reward.position} z-10 flex items-center gap-2 rounded-xl border border-[#d8e6d9] bg-white/95 px-3.5 py-2.5 shadow-[0px_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-sm transition-transform hover:-translate-y-1`}
             >
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#e8f5e9] text-[#2e7d32]">
                 <GoogleIcon name={reward.icon} size={18} filled />
               </div>
               <p className="text-xs sm:text-[13px] font-bold text-[#1a2a1b] whitespace-nowrap">
-                {reward.text}
+                {reward.coinsText}
               </p>
             </div>
           ))}
@@ -143,3 +159,4 @@ export const WasteRecyclingHero = (): React.JSX.Element => {
     </section>
   );
 };
+

@@ -32,6 +32,8 @@ export interface PickupRadiusTier {
   description: string;
 }
 
+export const COIN_VALUE_IDR = 35; // 1 Poin/Koin = Rp 35
+
 // Rekomendasi rentang persentase sharing reward ke coffee shop (20% - 40%, standar baseline 35%)
 export const DEFAULT_SHARE_RATE = 0.35;
 export const MIN_SHARE_RATE = 0.20;
@@ -75,17 +77,27 @@ export const WASTE_CATEGORIES: WasteCategory[] = [
     name: "Plastic Cup (PP/PET)",
     category: "Plastik",
     offtakerPricePerKg: 5000,
-    pointPerKg: Math.round(5000 * DEFAULT_SHARE_RATE), // 1.750 Poin (Rp 1.750)
+    pointPerKg: 15, // 15 Poin/kg (Nilai Kas: Rp 525/kg)
     co2Factor: 1.2,
     icon: "coffee",
     description: "Cup kopi takeaway & cup boba (bersih, bebas sisa cairan)",
+  },
+  {
+    id: "ampas-kopi",
+    name: "Ampas Kopi (Spent Grounds)",
+    category: "Organik",
+    offtakerPricePerKg: 3000,
+    pointPerKg: 10, // 10 Poin/kg (Nilai Kas: Rp 350/kg)
+    co2Factor: 0.6,
+    icon: "compost",
+    description: "Ampas espresso & manual brew untuk pupuk & briket bio-arang",
   },
   {
     id: "botol-plastik",
     name: "Botol Plastik (PET Bening)",
     category: "Plastik",
     offtakerPricePerKg: 6000,
-    pointPerKg: Math.round(6000 * DEFAULT_SHARE_RATE), // 2.100 Poin (Rp 2.100)
+    pointPerKg: 5, // 5 Poin/kg (Nilai Kas: Rp 175/kg)
     co2Factor: 1.4,
     icon: "local_drink",
     description: "Botol air mineral, botol sirup bening / transparan",
@@ -95,20 +107,10 @@ export const WASTE_CATEGORIES: WasteCategory[] = [
     name: "Tutup Cup & Sedotan (HDPE/PP)",
     category: "Plastik",
     offtakerPricePerKg: 3000,
-    pointPerKg: Math.round(3000 * DEFAULT_SHARE_RATE), // 1.050 Poin (Rp 1.050)
+    pointPerKg: 3, // 3 Poin/kg (Nilai Kas: Rp 105/kg)
     co2Factor: 0.8,
     icon: "takeout_dining",
     description: "Lid plastik cembung/flat, seal cup, dan sedotan",
-  },
-  {
-    id: "ampas-kopi",
-    name: "Ampas Kopi (Spent Grounds)",
-    category: "Organik",
-    offtakerPricePerKg: 3000,
-    pointPerKg: Math.round(3000 * DEFAULT_SHARE_RATE), // 1.050 Poin (Rp 1.050)
-    co2Factor: 0.6,
-    icon: "compost",
-    description: "Ampas espresso & manual brew untuk pupuk & briket bio-arang",
   },
 ];
 

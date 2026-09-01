@@ -85,7 +85,246 @@ export const EcoCertificateLevelSection: React.FC<EcoCertificateLevelSectionProp
   const nextProgressPercent = Math.min(100, Math.round((totalKg / nextLevel.minKg) * 100));
 
   const handlePrintCertificate = () => {
-    window.print();
+    if (!selectedCert) return;
+
+    const printFrame = document.createElement("iframe");
+    printFrame.style.position = "fixed";
+    printFrame.style.right = "0";
+    printFrame.style.bottom = "0";
+    printFrame.style.width = "0";
+    printFrame.style.height = "0";
+    printFrame.style.border = "0";
+    document.body.appendChild(printFrame);
+
+    const certNumber = `CERT-RB-2026-${(Math.abs(selectedCert.minKg * 100)).toString().padStart(6, "0")}`;
+    const issueDate = new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${selectedCert.name} - ${cafeName}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .cert-card {
+      width: 90%;
+      max-width: 680px;
+      margin: auto;
+      padding: 36px 40px;
+      border: 8px double #d97706;
+      border-radius: 18px;
+      background: #fbfdfa;
+      text-align: center;
+      position: relative;
+    }
+    .ornament {
+      position: absolute;
+      color: #d97706;
+      font-size: 18px;
+      opacity: 0.7;
+    }
+    .ornament-tl { top: 10px; left: 10px; }
+    .ornament-tr { top: 10px; right: 10px; }
+    .ornament-bl { bottom: 10px; left: 10px; }
+    .ornament-br { bottom: 10px; right: 10px; }
+    
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: #006c49;
+      color: white;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .brand-name {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #006c49;
+      text-transform: uppercase;
+    }
+    .subtitle {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #d97706;
+      text-transform: uppercase;
+      margin-top: 4px;
+      display: block;
+    }
+    .cert-title {
+      font-size: 24px;
+      font-weight: 900;
+      color: #0b1c30;
+      margin: 8px 0 2px 0;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .cert-number {
+      font-size: 11px;
+      color: #6c7a71;
+      font-family: monospace;
+      display: block;
+      margin-bottom: 16px;
+    }
+    .recipient-block {
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 16px 0;
+      margin: 16px 0;
+    }
+    .given-to {
+      font-size: 12px;
+      color: #4a5568;
+      font-style: italic;
+      display: block;
+    }
+    .cafe-name {
+      font-size: 28px;
+      font-weight: 900;
+      color: #006c49;
+      margin: 6px 0 2px 0;
+      font-family: Georgia, "Times New Roman", serif;
+      text-decoration: underline;
+      text-decoration-color: rgba(217, 119, 6, 0.4);
+      text-underline-offset: 6px;
+    }
+    .cafe-city {
+      font-size: 12px;
+      color: #718096;
+      display: block;
+      margin-top: 6px;
+    }
+    .statement {
+      font-size: 11px;
+      color: #3c4a42;
+      line-height: 1.6;
+      max-width: 540px;
+      margin: 0 auto 24px auto;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+      font-size: 10px;
+      color: #6c7a71;
+      text-align: left;
+    }
+    .footer-col-right {
+      text-align: right;
+    }
+    .qr-box {
+      width: 44px;
+      height: 44px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      margin: 0 auto 4px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      background: #ffffff;
+      color: #006c49;
+    }
+  </style>
+</head>
+<body>
+  <div class="cert-card">
+    <div class="ornament ornament-tl">❖</div>
+    <div class="ornament ornament-tr">❖</div>
+    <div class="ornament ornament-bl">❖</div>
+    <div class="ornament ornament-br">❖</div>
+
+    <div class="brand">
+      <div class="brand-icon">🌱</div>
+      <span class="brand-name">ReBrew Indonesia</span>
+    </div>
+
+    <span class="subtitle">Certificate of Environmental Excellence</span>
+    <h1 class="cert-title">${selectedCert.name}</h1>
+    <span class="cert-number">No. Sertifikat: ${certNumber}</span>
+
+    <div class="recipient-block">
+      <span class="given-to">Diberikan secara resmi kepada:</span>
+      <h2 class="cafe-name">${cafeName}</h2>
+      <span class="cafe-city">Kota Operasional: <strong>${city}</strong></span>
+    </div>
+
+    <p class="statement">
+      Atas komitmen dan kontribusi nyata dalam pengelolaan limbah kopi sirkular, pengurangan jejak karbon emisi gas rumah kaca, serta kepatuhan standar lingkungan hidup <strong>Permen LHK No. 75/2019</strong> bersama platform ReBrew.
+    </p>
+
+    <div class="footer">
+      <div>
+        <span>Tanggal Diterbitkan:</span><br>
+        <strong style="color: #0b1c30;">${issueDate}</strong><br>
+        <span style="color: #006c49; font-weight: bold; margin-top: 4px; display: inline-block;">✔ Terverifikasi ReBrew Core</span>
+      </div>
+
+      <div style="text-align: center;">
+        <div class="qr-box">⛶</div>
+        <span style="font-size: 9px;">Scan Verifikasi</span>
+      </div>
+
+      <div class="footer-col-right">
+        <span>Direktur Kemitraan Sirkular:</span><br>
+        <strong style="color: #0b1c30; text-decoration: underline; margin-top: 12px; display: inline-block;">ReBrew Circular Committee</strong><br>
+        <span style="color: #006c49; font-weight: 600;">10th IndonesiaNEXT</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const frameDoc = printFrame.contentWindow?.document;
+    if (frameDoc) {
+      frameDoc.open();
+      frameDoc.write(htmlContent);
+      frameDoc.close();
+
+      setTimeout(() => {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(printFrame);
+        }, 1000);
+      }, 300);
+    }
   };
 
   return (
@@ -229,7 +468,7 @@ export const EcoCertificateLevelSection: React.FC<EcoCertificateLevelSectionProp
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-[#bbcabf]/40 overflow-hidden animate-fade-in my-8 print:my-0 print:shadow-none print:border-none print:max-w-none print:w-full">
+          <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-[#bbcabf]/40 overflow-hidden animate-fade-in my-8 print:my-0 print:shadow-none print:border-none print:max-w-none print:w-full print:bg-transparent">
             {/* Header Modal */}
             <div className="bg-[#006c49] p-4 px-6 text-white flex items-center justify-between print:hidden">
               <div className="flex items-center gap-2">
@@ -249,8 +488,11 @@ export const EcoCertificateLevelSection: React.FC<EcoCertificateLevelSectionProp
               </button>
             </div>
 
-            {/* Certificate Frame Printable */}
-            <div className="p-6 sm:p-8 bg-[#fbfdfa] flex flex-col items-center text-center relative border-8 border-[#f5f0e1] m-4 sm:m-6 rounded-2xl shadow-inner">
+            {/* Certificate Frame Printable (HANYA INI YANG DI-PRINT/DOWNLOAD) */}
+            <div
+              id="certificate-print-area"
+              className="p-6 sm:p-8 bg-[#fbfdfa] flex flex-col items-center text-center relative border-8 border-[#f5f0e1] m-4 sm:m-6 rounded-2xl shadow-inner print:m-0 print:border-8 print:border-[#d97706] print:bg-white"
+            >
               {/* Corner Ornaments */}
               <div className="absolute top-2 left-2 text-[#d97706] opacity-60">❖</div>
               <div className="absolute top-2 right-2 text-[#d97706] opacity-60">❖</div>
