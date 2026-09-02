@@ -65,9 +65,6 @@ export function SaldoClientView({
           <h1 className="text-2xl font-bold text-[#0b1c30] tracking-tight">
             Pencairan Saldo & Kas Koin
           </h1>
-          <p className="text-sm text-[#3c4a42] mt-0.5">
-            Konversi poin hasil setor sampah <strong>{cafeName}</strong> menjadi uang tunai langsung ke rekening bank atau e-wallet.
-          </p>
         </div>
 
         {/* Action Header Button */}

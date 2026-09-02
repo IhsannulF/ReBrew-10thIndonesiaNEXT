@@ -38,7 +38,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const pathname = usePathname();
 
   const userName = user?.name || user?.email?.split("@")[0] || "Mitra Kafe";
-  const tierName = user?.tier || "";
   const initial = userName.charAt(0).toUpperCase() || "M";
 
   return (
@@ -110,20 +109,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               {initial}
             </div>
 
-            {/* Name & Badge (Hanya tampil jika sudah mendapatkan badge) */}
+            {/* Name */}
             <div className="flex flex-col min-w-0">
               <span className="truncate text-xs font-bold text-[#0b1c30]">
                 {userName}
               </span>
-              {tierName ? (
-                <span className="truncate text-[11px] font-bold text-[#92400e]">
-                  {tierName}
-                </span>
-              ) : (
-                <span className="truncate text-[11px] text-[#6c7a71]">
-                  {user?.cafeName || "Mitra Kafe"}
-                </span>
-              )}
             </div>
           </div>
 

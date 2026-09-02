@@ -37,7 +37,7 @@ export default async function DashboardPage() {
   const defaultEmptyComposition: WasteCompositionItem[] = [
     {
       key: "cup_plastik",
-      name: "Plastic Cup (PP/PET)",
+      name: "Plastic Cup",
       weightKg: 0,
       percentage: 0,
       points: 5,
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     },
     {
       key: "botol_plastik",
-      name: "Botol Plastik PET",
+      name: "Botol Plastik",
       weightKg: 0,
       percentage: 0,
       points: 10,
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
     },
     {
       key: "tutup_cup",
-      name: "Tutup Cup & Seal",
+      name: "Tutup Cup",
       weightKg: 0,
       percentage: 0,
       points: 3,
@@ -228,17 +228,17 @@ export default async function DashboardPage() {
         const mappedTransactions: TransactionItem[] = dbTransactions.map((tx: any) => {
           const rawCatId = (tx.category || "").toLowerCase();
           let categoryKey: WasteCategoryKey = "cup_plastik";
-          let materialName = tx.category || "Plastic Cup (PP/PET)";
+          let materialName = (tx.category || "Plastic Cup").replace(/\s*\([^)]*\)/g, "").trim();
 
           if (rawCatId.includes("botol")) {
             categoryKey = "botol_plastik";
-            materialName = "Botol Plastik PET";
+            materialName = "Botol Plastik";
           } else if (rawCatId.includes("tutup")) {
             categoryKey = "tutup_cup";
-            materialName = "Tutup Cup & Seal";
+            materialName = "Tutup Cup";
           } else if (rawCatId.includes("ampas")) {
             categoryKey = "cup_plastik";
-            materialName = "Ampas Kopi (Spent Grounds)";
+            materialName = "Ampas Kopi";
           }
 
           const dropPointName = tx.method === "dijemput" ? "Armada Jemput ReBrew" : "ReBrew Central Hub Melawai";
@@ -326,7 +326,7 @@ export default async function DashboardPage() {
           dashboardData.wasteComposition = [
             {
               key: "cup_plastik",
-              name: "Plastic Cup (PP/PET)",
+              name: "Plastic Cup",
               weightKg: Math.round(categoryWeights.cup_plastik.weight * 10) / 10,
               percentage: Math.round((categoryWeights.cup_plastik.weight / totalCalculatedWeight) * 100),
               points: 5,
@@ -335,7 +335,7 @@ export default async function DashboardPage() {
             },
             {
               key: "botol_plastik",
-              name: "Botol Plastik PET",
+              name: "Botol Plastik",
               weightKg: Math.round(categoryWeights.botol_plastik.weight * 10) / 10,
               percentage: Math.round((categoryWeights.botol_plastik.weight / totalCalculatedWeight) * 100),
               points: 10,
@@ -344,7 +344,7 @@ export default async function DashboardPage() {
             },
             {
               key: "tutup_cup",
-              name: "Tutup Cup & Seal",
+              name: "Tutup Cup",
               weightKg: Math.round(categoryWeights.tutup_cup.weight * 10) / 10,
               percentage: Math.round((categoryWeights.tutup_cup.weight / totalCalculatedWeight) * 100),
               points: 3,

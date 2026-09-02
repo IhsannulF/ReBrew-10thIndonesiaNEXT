@@ -49,7 +49,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user }) => {
           </Link>
         </div>
 
-        {/* Desktop Left: Cafe Name & User Tier Badge */}
+        {/* Desktop Left: Cafe Name */}
         <div className="hidden md:flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49]">
@@ -59,11 +59,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user }) => {
               {user?.cafeName || "Kedai Kopi Mitra"}
             </span>
           </div>
-          {user?.tier && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#fef3c7] border border-[#fde68a] px-3 py-1 text-xs font-bold text-[#92400e]">
-              <span>{user.tier}</span>
-            </span>
-          )}
         </div>
 
         {/* Right Section: Saldo */}

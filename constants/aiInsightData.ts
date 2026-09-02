@@ -7,7 +7,7 @@ import {
 export const DEFAULT_ECO_METRICS: EcoScoreMetrics = {
   overallScore: 0,
   scoreLabel: "Memulai Daur Ulang",
-  rankingCityText: "Mitra Baru",
+  rankingCityText: "Peringkat #1 Mitra ReBrew",
   sortedRatioPercent: 0,
   cleanlinessScore: 0,
   pickupEfficiencyScore: 0,

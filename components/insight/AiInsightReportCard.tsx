@@ -42,9 +42,6 @@ export const AiInsightReportCard: React.FC<AiInsightReportCardProps> = ({
             <h3 className="text-base sm:text-lg font-bold text-[#0b1c30] mt-0.5">
               Download Laporan Strategis & Diagnostik AI
             </h3>
-            <p className="text-xs text-[#3c4a42] mt-1 max-w-xl leading-relaxed">
-              Unduh dan cetak rangkuman lengkap evaluasi limbah kafe <strong>{cafeName}</strong>, skor sirkularitas, diagnostik operasional, serta langkah-langkah rekomendasi strategis AI dalam format visual siap bagikan.
-            </p>
           </div>
         </div>
 

@@ -48,9 +48,6 @@ export const AiRecommendationsList: React.FC<AiRecommendationsListProps> = ({
               <h2 className="text-base font-bold text-[#0b1c30]">
                 Rekomendasi Strategis AI
               </h2>
-              <p className="text-xs text-[#3c4a42] mt-0.5">
-                Langkah aksi nyata rekomendasi Google Gemini untuk mengoptimalkan perolehan koin dan green branding
-              </p>
             </div>
           </div>
 

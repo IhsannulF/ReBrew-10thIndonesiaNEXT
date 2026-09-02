@@ -38,6 +38,8 @@ export function useAiInsight({ initialData }: UseAiInsightProps = {}) {
     "all" | RecommendationCategory
   >("all");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [generationStep, setGenerationStep] = useState<string>("");
+  const [generationStepIndex, setGenerationStepIndex] = useState<number>(1);
   const [refreshSuccess, setRefreshSuccess] = useState<string | null>(null);
 
   const iterationRef = useRef<number>(0);
@@ -92,14 +94,32 @@ export function useAiInsight({ initialData }: UseAiInsightProps = {}) {
     return rec.category === selectedCategory;
   });
 
-  // Handler Refresh Analisis AI secara Dinamis & Bervariasi dengan Google Gemini
+  // Handler Refresh Analisis AI secara Dinamis & Bervariasi dengan Google Gemini + Live Stepper
   const handleRefreshAi = async () => {
     if (isGenerating) return;
     setIsGenerating(true);
     setRefreshSuccess(null);
+    setGenerationStepIndex(1);
+    setGenerationStep("Membaca log data penimbangan & riwayat transaksi kafe...");
 
     iterationRef.current += 1;
     const currentIteration = iterationRef.current;
+
+    // Timers untuk live stepper feedback
+    const timer1 = setTimeout(() => {
+      setGenerationStepIndex(2);
+      setGenerationStep("Menganalisis komposisi limbah & reduksi jejak karbon CO₂...");
+    }, 700);
+
+    const timer2 = setTimeout(() => {
+      setGenerationStepIndex(3);
+      setGenerationStep("Menghubungkan ke Gemini 2.5 Pro untuk strategic reasoning...");
+    }, 1500);
+
+    const timer3 = setTimeout(() => {
+      setGenerationStepIndex(4);
+      setGenerationStep("Merumuskan rekomendasi taktis & peluang monetisasi kas...");
+    }, 2400);
 
     try {
       const result = await generateGeminiStrategicInsights({
@@ -139,7 +159,11 @@ export function useAiInsight({ initialData }: UseAiInsightProps = {}) {
     } catch (err) {
       console.error("Error refreshing AI insight:", err);
     } finally {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
       setIsGenerating(false);
+      setGenerationStep("");
     }
   };
 
@@ -152,6 +176,8 @@ export function useAiInsight({ initialData }: UseAiInsightProps = {}) {
     selectedCategory,
     setSelectedCategory,
     isGenerating,
+    generationStep,
+    generationStepIndex,
     refreshSuccess,
     handleRefreshAi,
   };

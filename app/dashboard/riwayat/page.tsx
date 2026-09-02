@@ -49,9 +49,6 @@ export default function RiwayatTransaksiPage() {
           <h1 className="text-2xl font-bold text-[#0b1c30] tracking-tight">
             Riwayat Setoran & Tiket Daur Ulang
           </h1>
-          <p className="text-sm text-[#3c4a42] mt-0.5">
-            Pantau seluruh log transaksi setor sampah, penimbangan fisik, dan mutasi perolehan poin.
-          </p>
         </div>
 
         {/* Action Header Button */}

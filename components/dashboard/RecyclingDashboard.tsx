@@ -114,9 +114,6 @@ export const RecyclingDashboard: React.FC<RecyclingDashboardProps> = ({
           >
             Selamat Datang, {profile.name} 👋
           </h1>
-          <p className="text-xs sm:text-sm text-[#3c4a42] leading-relaxed">
-            Pantau aktivitas penimbangan limbah kafe, perolehan koin, dan peringkat leaderboard Anda.
-          </p>
         </div>
 
         {/* Quick Action Buttons */}

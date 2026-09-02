@@ -37,8 +37,9 @@ function generatePersonalizedRecommendations(params: {
   currentKg: number
   txCount: number
   streakDays: number
+  dominantCategory?: string
 }): AiRecommendation[] {
-  const { cafeName, userCity, saldoPoin, currentKg, txCount } = params
+  const { cafeName, userCity, saldoPoin, currentKg, txCount, dominantCategory = 'Plastic Cup' } = params
   const isNewAccount = currentKg === 0 && txCount === 0
   const timeId = Date.now()
 
@@ -50,8 +51,8 @@ function generatePersonalizedRecommendations(params: {
         categoryLabel: 'Efisiensi Pemilahan',
         icon: 'cleaning_services',
         title: `Setup Bin Pemilahan di Bar ${cafeName}`,
-        description: `Sediakan wadah khusus cup plastik PP & botol PET di bawah meja bar ${cafeName} untuk mengumpulkan sampah bersih perdana.`,
-        impactLabel: '+1.750 Poin Pertama',
+        description: `Sediakan wadah khusus cup plastik PP & ampas kopi di bawah meja bar ${cafeName} untuk mengumpulkan sampah bersih perdana.`,
+        impactLabel: '+75 Poin Pertama',
         priority: 'high',
         actionText: 'Setor Sampah',
         actionHref: '/dashboard/setor',
@@ -67,13 +68,13 @@ function generatePersonalizedRecommendations(params: {
         categoryLabel: 'Upcycling & Kas',
         icon: 'payments',
         title: 'Aktivasi Saldo Kas Pertama Kafe',
-        description: `Setiap 1 kg sampah bernilai poin yang langsung dapat dicairkan menjadi saldo rupiah ke rekening bank atau e-wallet kafe Anda.`,
-        impactLabel: 'Tarik Kas Rp 87.500+',
+        description: `Setiap 1 kg sampah bernilai poin yang langsung dapat dicairkan menjadi uang kas (1 Poin = Rp 35) ke rekening bank atau e-wallet kafe Anda.`,
+        impactLabel: 'Tarik Kas Rp 50.000+',
         priority: 'high',
         actionText: 'Buka Halaman Saldo',
         actionHref: '/dashboard/saldo',
         actionSteps: [
-          'Kumpulkan cup plastik dan kardus kemasan susu',
+          'Kumpulkan cup plastik dan ampas kopi',
           'Tukarkan poin hasil setor limbah di platform ReBrew',
           'Cairkan dana kas langsung tanpa biaya admin'
         ]
@@ -84,7 +85,7 @@ function generatePersonalizedRecommendations(params: {
         categoryLabel: 'Optimasi Logistik',
         icon: 'local_shipping',
         title: `Pilih Drop Point atau Penjemputan di ${userCity}`,
-        description: `Pilih opsi antar ke Drop Point ReBrew terdekat di ${userCity} atau pesan penjemputan armada gratis untuk berat di atas 10 kg.`,
+        description: `Pilih opsi antar ke Drop Point ReBrew terdekat di ${userCity} atau pesan penjemputan armada gratis untuk berat sesuai radius hub.`,
         impactLabel: 'Bebas Biaya Jemput',
         priority: 'medium',
         actionText: 'Pilih Metode Setor',
@@ -118,24 +119,35 @@ function generatePersonalizedRecommendations(params: {
   // Rekomendasi Dinamis untuk Akun Aktif (1 Poin = Rp 35)
   const cashValue = (saldoPoin * 35).toLocaleString('id-ID')
   const co2Saved = (currentKg * 1.2).toFixed(1)
+  const isDominantAmpas = dominantCategory.toLowerCase().includes('ampas')
 
   return [
     {
       id: `rec-active-${timeId}-1`,
       category: 'sorting_efficiency',
       categoryLabel: 'Efisiensi Pemilahan',
-      icon: 'cleaning_services',
-      title: `Optimasi Pemilahan Ampas Kopi ${cafeName}`,
-      description: `Dengan total ${currentKg} kg sampah yang sudah terkelola, pisahkan ampas kopi kering untuk program Circular Soil ReBrew.`,
-      impactLabel: '+200 Poin / Setor',
+      icon: isDominantAmpas ? 'compost' : 'cleaning_services',
+      title: isDominantAmpas
+        ? `Optimasi Pemilahan Ampas Kopi ${cafeName}`
+        : `Standarisasi Penumpukan Cup Plastik di Bar ${cafeName}`,
+      description: isDominantAmpas
+        ? `Dengan total ${currentKg} kg sampah yang sudah terkelola, pisahkan ampas kopi kering untuk program Circular Soil ReBrew.`
+        : `Pastikan cup plastik PP ditumpuk rapi tanpa sisa cairan untuk memaksimalkan kapasitas penimbangan di armada.`,
+      impactLabel: isDominantAmpas ? '+10 Poin/kg Ampas' : '+15 Poin/kg Cup',
       priority: 'high',
-      actionText: 'Setor Ampas Kopi',
+      actionText: 'Setor Sampah',
       actionHref: '/dashboard/setor',
-      actionSteps: [
-        'Kuras knockbox espresso ke wadah tertutup khusus ampas kopi',
-        'Pisahkan dari sampah plastik agar tidak lembap dan bau',
-        'Setor saat terkumpul 5-10 kg untuk bonus poin sirkular'
-      ]
+      actionSteps: isDominantAmpas
+        ? [
+            'Kuras knockbox espresso ke wadah tertutup khusus ampas kopi',
+            'Pisahkan dari sampah plastik agar tidak lembap dan bau',
+            'Setor saat terkumpul 5-10 kg untuk bonus poin sirkular'
+          ]
+        : [
+            'Bilas cepat atau tiriskan sisa es kopi pada cup',
+            'Tumpuk rapi per 20-25 cup untuk menghemat ruang penyimpanan bar',
+            'Setor ke Drop Point atau jadwalkan jemput armada'
+          ]
     },
     {
       id: `rec-active-${timeId}-2`,
@@ -143,7 +155,7 @@ function generatePersonalizedRecommendations(params: {
       categoryLabel: 'Upcycling & Kas',
       icon: 'monetization_on',
       title: `Cairkan ${saldoPoin.toLocaleString('id-ID')} Poin Aktif (Rp ${cashValue})`,
-      description: `Saldo poin aktif kafe ${cafeName} saat ini bernilai Rp ${cashValue}. Anda dapat mencairkannya langsung ke rekening operasional kafe.`,
+      description: `Saldo poin aktif kafe ${cafeName} saat ini bernilai Rp ${cashValue} (1 Poin = Rp 35). Anda dapat mencairkannya langsung ke rekening operasional kafe.`,
       impactLabel: `Tarik Kas Rp ${cashValue}`,
       priority: 'high',
       actionText: 'Tarik Uang Sekarang',
@@ -160,15 +172,15 @@ function generatePersonalizedRecommendations(params: {
       categoryLabel: 'Optimasi Logistik',
       icon: 'local_shipping',
       title: `Penjadwalan Jemput Armada Rutin di ${userCity}`,
-      description: `Kumpulkan kardus kemasan susu lipat pipih dan kaleng krimer untuk penjemputan hemat emisi setiap awal pekan di ${userCity}.`,
+      description: `Kumpulkan material ${dominantCategory} untuk penjemputan hemat emisi setiap awal pekan di ${userCity}.`,
       impactLabel: 'Gratis Armada Jemput',
       priority: 'medium',
       actionText: 'Jadwalkan Setor',
       actionHref: '/dashboard/setor',
       actionSteps: [
-        'Buka lipatan kardus susu UHT agar muat 3x lebih banyak di gudang',
-        'Pilih menu Setor Sampah Dijemput pada hari Senin pagi',
-        'Petugas armada menimbang langsung dengan Smart Scale Bluetooth'
+        'Kumpulkan limbah hingga mencapai kuota minimum tier radius hub',
+        'Pilih menu Setor Sampah Dijemput pada hari kerja',
+        'Petugas armada menimbang langsung dengan Smart Scale IoT'
       ]
     },
     {
@@ -306,7 +318,7 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
   const userRank = userRankIndex >= 0 ? userRankIndex + 1 : profileList.length
   const totalPartners = Math.max(1, profileList.length)
 
-  // 3. Fetch User Transactions
+  // 3. Fetch User Transactions & Compute Material Breakdown
   let { data: txList } = await db
     .from('transactions')
     .select('total_weight_kg, actual_weight, total_points, total_co2_kg, status, category, created_at')
@@ -326,6 +338,32 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
   const currentKg = totalKg > 0 ? totalKg : verifiedWeight
   const co2SavedKg = Number((currentKg * 1.2).toFixed(1))
 
+  // Analisis Komposisi Material Sampah
+  let catWeightMap: Record<string, number> = {
+    'Plastic Cup': 0,
+    'Ampas Kopi': 0,
+    'Botol Plastik': 0,
+  }
+
+  if (txList && txList.length > 0) {
+    txList.forEach((t: any) => {
+      const weight = Number(t.total_weight_kg || t.actual_weight || 0)
+      const cat = (t.category || '').toLowerCase()
+      if (cat.includes('ampas')) catWeightMap['Ampas Kopi'] += weight
+      else if (cat.includes('botol')) catWeightMap['Botol Plastik'] += weight
+      else catWeightMap['Plastic Cup'] += weight
+    })
+  }
+
+  let dominantCategory = 'Plastic Cup'
+  let maxW = 0
+  Object.entries(catWeightMap).forEach(([c, w]) => {
+    if (w > maxW) {
+      maxW = w
+      dominantCategory = c
+    }
+  })
+
   // 4. Kalkulasi Metrik AI yang Tepat Sesuai Akun
   const isNewAccount = currentKg === 0 && txCount === 0
 
@@ -334,7 +372,7 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
   let sortedRatioPercent = 0
   let cleanlinessScore = 0
   let pickupEfficiencyScore = 0
-  let rankingCityText = `#${userRank} di ${userCity} (Mitra Baru)`
+  let rankingCityText = `#${userRank} dari ${totalPartners} Mitra`
 
   if (isNewAccount) {
     overallScore = 0
@@ -342,7 +380,7 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
     sortedRatioPercent = 0
     cleanlinessScore = 0
     pickupEfficiencyScore = 0
-    rankingCityText = `#${userRank} dari ${totalPartners} Mitra (${userCity})`
+    rankingCityText = `#${userRank} dari ${totalPartners} Mitra`
   } else {
     // Akun yang sudah punya setoran aktif
     const calculatedScore = Math.min(99, Math.max(60, Math.round(60 + (currentKg * 1.2) + (streakDays * 2) + (txCount * 2))))
@@ -351,7 +389,7 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
     sortedRatioPercent = Math.min(98, 85 + Math.min(10, txCount * 2))
     cleanlinessScore = Math.min(96, 88 + (streakDays > 0 ? 4 : 0))
     pickupEfficiencyScore = 92
-    rankingCityText = `#${userRank} di ${userCity}`
+    rankingCityText = `#${userRank} dari ${totalPartners} Mitra`
   }
 
   const ecoMetrics: EcoScoreMetrics = {
@@ -382,29 +420,29 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
   // 6. Diagnostik Awal
   const diagnostic = isNewAccount
     ? {
-        executiveSummary: `Selamat datang ${userName} di ${cafeName}! Akun Anda baru terdaftar dengan saldo 0 poin dan belum memiliki riwayat setoran limbah. Segera lakukan setoran sampah pertama (cup plastik PP, botol PET, kardus susu) di kota ${userCity} untuk mengaktifkan AI Eco-Advisor dan menaikkan peringkat leaderboard kafe Anda.`,
+        executiveSummary: `Selamat datang ${userName} di ${cafeName}! Akun Anda baru terdaftar dengan saldo 0 poin dan belum memiliki riwayat setoran limbah. Segera lakukan setoran sampah pertama (cup plastik PP, botol PET, ampas kopi) untuk mengaktifkan AI Eco-Advisor dan menaikkan peringkat leaderboard kemitraan kafe Anda.`,
         wasteHighlights: [
-          `Akun baru terdaftar — belum ada catatan limbah terverifikasi di ${userCity}.`,
+          `Akun baru terdaftar — belum ada catatan limbah terverifikasi di platform.`,
           `Mulai pisahkan cup plastik PP dari tutup lid di meja bar ${cafeName}.`,
-          'Setiap 1 kg cup plastik bernilai poin yang langsung bisa dicairkan ke uang kas.'
+          'Setiap 1 kg cup plastik bernilai poin yang langsung bisa dicairkan ke uang kas (1 Poin = Rp 35).'
         ],
         revenueOpportunities: [
-          'Kumpulkan 5 kg sampah pertama untuk membuka hingga 1.750 Poin ReBrew.',
+          'Kumpulkan 5 kg sampah pertama untuk membuka hingga 75 Poin ReBrew.',
           'Tukarkan poin hasil setor sampah menjadi saldo rupiah gratis biaya admin.'
         ],
         esgReadiness: 'Status: Pendaftaran Mitra Baru — Menunggu Setoran Pertama',
         lastGeneratedAt: 'Baru saja',
       }
     : {
-        executiveSummary: `Berdasarkan analisis limbah kafe ${cafeName} (${currentKg} kg terkelola & ${saldoPoin.toLocaleString('id-ID')} poin aktif), performa sirkularitas Anda berada di peringkat #${userRank} di ${userCity} (${scoreLabel}).`,
+        executiveSummary: `Berdasarkan analisis limbah kafe ${cafeName} (${currentKg} kg terkelola & ${saldoPoin.toLocaleString('id-ID')} poin aktif), performa sirkularitas Anda berada di peringkat #${userRank} dari ${totalPartners} Mitra ReBrew (${scoreLabel}). Material limbah terkelola dominan: ${dominantCategory}.`,
         wasteHighlights: [
-          `Pemisahan material utama mencapai ${sortedRatioPercent}% efisiensi.`,
+          `Pemisahan material utama (${dominantCategory}) mencapai ${sortedRatioPercent}% efisiensi.`,
           `Perkiraan reduksi emisi berhasil mencapai ${co2SavedKg} kg CO₂e.`,
           `Puncak timbulan sampah terjadi pada ${projection.peakDays} (${projection.peakHours}).`
         ],
         revenueOpportunities: [
-          `Tukarkan ${saldoPoin} Poin aktif menjadi uang kas sebesar Rp ${(saldoPoin * 50).toLocaleString('id-ID')} melalui menu Tarik Uang.`,
-          `Optimasi pemilahan cup PP bersih untuk meraih poin maksimal.`
+          `Tukarkan ${saldoPoin} Poin aktif menjadi uang kas sebesar Rp ${(saldoPoin * 35).toLocaleString('id-ID')} (1 Poin = Rp 35) melalui menu Tarik Uang.`,
+          `Optimasi pemilahan ${dominantCategory} bersih untuk meraih poin maksimal.`
         ],
         esgReadiness: `${scoreLabel} — Siap untuk Kemitraan Sirkular ESG 2026`,
         lastGeneratedAt: 'Baru saja',
@@ -418,6 +456,7 @@ export async function getUserAiInsightData(): Promise<UserAiInsightData> {
     currentKg,
     txCount,
     streakDays,
+    dominantCategory,
   })
 
   return {

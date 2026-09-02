@@ -10,7 +10,8 @@ export interface GeminiAdvisorContext {
   cafeName?: string
   totalKg?: number
   saldoPoin?: number
-  topCategory?: string
+  dominantCategory?: string
+  wasteBreakdown?: string
   streakDays?: number
   iteration?: number
 }
@@ -47,6 +48,8 @@ export async function generateGeminiStrategicInsights(customContext?: GeminiAdvi
   let saldoPoin = Number(customContext?.saldoPoin ?? 0)
   let totalKg = Number(customContext?.totalKg ?? 0)
   let streakDays = Number(customContext?.streakDays ?? 0)
+  let dominantCategory = customContext?.dominantCategory || 'Plastic Cup'
+  let wasteBreakdown = customContext?.wasteBreakdown || 'Plastic Cup (65%), Ampas Kopi (35%)'
 
   if (user?.id) {
     const { data: profile } = await supabase
@@ -66,11 +69,17 @@ export async function generateGeminiStrategicInsights(customContext?: GeminiAdvi
     }
   }
 
-  // 2. Ambil Riwayat Transaksi Nyata User dari Database
+  // 2. Ambil Riwayat Transaksi Nyata User dari Database & Hitung Komposisi Limbah
   let txCount = 0
   let confirmedTxCount = 0
   let depositedCategories: string[] = []
   let favoriteMethod = 'Drop Point Hub'
+  let catWeightMap: Record<string, number> = {
+    'Plastic Cup': 0,
+    'Ampas Kopi': 0,
+    'Botol Plastik': 0,
+    'Kardus & Lainnya': 0,
+  }
 
   if (user?.id) {
     const { data: txList } = await supabase
@@ -85,9 +94,34 @@ export async function generateGeminiStrategicInsights(customContext?: GeminiAdvi
       
       const catSet = new Set<string>()
       txList.forEach((t) => {
-        if (t.category) catSet.add(t.category)
+        const cat = t.category || 'Plastic Cup'
+        catSet.add(cat)
+        const weight = Number(t.total_weight_kg || 0)
+        const catLower = cat.toLowerCase()
+        if (catLower.includes('ampas')) catWeightMap['Ampas Kopi'] += weight
+        else if (catLower.includes('botol')) catWeightMap['Botol Plastik'] += weight
+        else if (catLower.includes('kardus')) catWeightMap['Kardus & Lainnya'] += weight
+        else catWeightMap['Plastic Cup'] += weight
       })
       depositedCategories = Array.from(catSet)
+
+      // Cari kategori dominan
+      let maxW = 0
+      let maxCat = 'Plastic Cup'
+      Object.entries(catWeightMap).forEach(([c, w]) => {
+        if (w > maxW) {
+          maxW = w
+          maxCat = c
+        }
+      })
+      if (maxW > 0) {
+        dominantCategory = maxCat
+        const totalCalculated = Object.values(catWeightMap).reduce((a, b) => a + b, 0) || 1
+        wasteBreakdown = Object.entries(catWeightMap)
+          .filter(([_, w]) => w > 0)
+          .map(([c, w]) => `${c}: ${w.toFixed(1)} kg (${Math.round((w / totalCalculated) * 100)}%)`)
+          .join(', ')
+      }
 
       const pickupCount = txList.filter((t) => t.method === 'dijemput').length
       favoriteMethod = pickupCount > txCount / 2 ? 'Armada Jemput ke Kafe' : 'Drop Point Central Hub'
@@ -200,6 +234,8 @@ DATA LENGKAP MITRA KAFE DARI DATABASE:
 - Kota Operasional: "${userCity}"
 - Status Akun: ${isNewAccount ? 'Mitra Baru Terdaftar (0 kg sampah, belum pernah setor)' : 'Mitra Aktif'}
 - Total Sampah Didaur Ulang: ${totalKg} kg (Estimasi Reduksi Emisi: ${(totalKg * 1.2).toFixed(1)} kg CO₂e)
+- Material Dominan: "${dominantCategory}"
+- Komposisi Limbah Terpilah Kafe: "${wasteBreakdown}"
 - Saldo Poin Kas Aktif: ${saldoPoin} Poin (Nilai Tukar Kas Bersih: Rp ${(saldoPoin * 35).toLocaleString('id-ID')})
 - Target Bulanan: ${targetKg} kg (Progres: ${targetProgressPercent}%, Status: ${isTargetAchieved ? 'Target Tercapai' : 'Sedang Berjalan'})
 - Riwayat Setoran: Total ${txCount} transaksi (${confirmedTxCount} berhasil terverifikasi)
@@ -214,7 +250,7 @@ TEMA EKSPLORASI KHUSUS SESI INI:
 Timestamp Generasi: "${nowTime}" (Sesi Analisis #${iteration})
 
 PETUNJUK ANALISIS & GAYA BAHASA (WAJIB DIIKUTI):
-1. PERSONALISASI NYATA: Rujuk langsung nama kafe "${cafeName}", kota "${userCity}", total ${totalKg} kg, saldo ${saldoPoin} poin, dan data spesifik kafe di atas dalam kalimat ulasan Anda. Jangan gunakan kalimat template generik!
+1. PERSONALISASI NYATA BERBASIS KOMPOSISI LIMBAH: Rujuk langsung nama kafe "${cafeName}", kota "${userCity}", material dominan "${dominantCategory}", total ${totalKg} kg, dan komposisi limbah "${wasteBreakdown}". Berikan solusi yang relevan dengan material utama kafe (misal: jika dominan Ampas Kopi, bahas pengolahan pupuk/scrub dan penirisan; jika dominan Cup Plastik, bahas penumpukan higienis dan seal strip).
 2. KALIMAT INSIGHT YANG UNIK & SEGAR: Hasilkan narasi diagnostik yang mendalam, inspiratif, solutif, dan mengeksplorasi sudut pandang "${selectedAngle}".
 3. ${isNewAccount ? 'Karena kafe ini baru mendaftar (0 kg), berikan panduan onboarding taktis langkah pertama untuk memulai pemilahan di area bar kopi, potensi cuan pertama, dan cara menjadwalkan penjemputan/drop point.' : 'Berikan insight evaluasi performa, celah peningkatan volume daur ulang, dan strategi monetisasi kas.'}
 
@@ -287,7 +323,14 @@ KEMBALIKAN RESPON HANYA BERUPA FORMAT JSON MURNI VALID:
 `
 
   const ai = new GoogleGenAI({ apiKey })
-  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+  // Prioritaskan model generasi tertinggi: Gemini 2.5 Pro untuk reasoning mendalam, lalu 2.5 Flash & 2.0 Flash
+  const modelsToTry = [
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash'
+  ]
 
   for (const modelName of modelsToTry) {
     try {

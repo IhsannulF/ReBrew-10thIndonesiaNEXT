@@ -28,9 +28,6 @@ export const WasteCategoryList: React.FC<WasteCategoryListProps> = ({
             <GoogleIcon name="category" size={20} className="text-[#006c49]" />
             Kategori Sampah & Estimasi Berat
           </h2>
-          <p className="text-xs text-[#6c7a71] mt-0.5">
-            Poin insentif sirkular (1 Poin = Rp 35, dapat dicairkan langsung ke kas kafe)
-          </p>
         </div>
         {resetWeights && (
           <button
@@ -78,99 +75,63 @@ export const WasteCategoryList: React.FC<WasteCategoryListProps> = ({
                     <GoogleIcon name={cat.icon} size={24} />
                   </div>
 
-                  <div className="flex flex-col min-w-0">
+                  <div className="flex flex-col min-w-0 justify-center">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-bold text-[#0b1c30]">
+                      <h3 className="text-sm sm:text-base font-bold text-[#0b1c30]">
                         {cat.name}
                       </h3>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] text-[#006c49] border border-[#006c49]/20">
+                      <span className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#f0fdf4] text-[#006c49] border border-[#006c49]/20">
                         {pointPerKg} Poin/kg (Rp {(pointPerKg * 35).toLocaleString("id-ID")}/kg)
                       </span>
-                    </div>
-                    <p className="text-xs text-[#6c7a71] mt-0.5 line-clamp-1">
-                      {cat.description}
-                    </p>
-                    <div className="flex items-center gap-3 text-[11px] text-[#3c4a42] mt-1 font-medium">
-                      <span>Offtaker: <span className="font-semibold text-[#0b1c30]">Rp {cat.offtakerPricePerKg.toLocaleString("id-ID")}/kg</span></span>
-                      <span>•</span>
-                      <span>CO₂ Factor: <span className="font-semibold text-[#306d58]">{cat.co2Factor} kg CO₂e/kg</span></span>
                     </div>
                   </div>
                 </div>
 
-                {/* Counter Input Berat (kg) */}
-                <div className="flex flex-col sm:items-end gap-1.5 w-full sm:w-auto">
-                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full">
-                    <div className="flex items-center rounded-xl border border-[#bbcabf]/40 bg-[#f8f9ff] p-1">
-                      <button
-                        type="button"
-                        onClick={() => adjustWeight(cat.id, -0.5)}
-                        disabled={currentWeight <= 0}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-[#0b1c30] shadow-2xs hover:bg-[#eff4ff] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        aria-label={`Kurangi ${cat.name}`}
-                      >
-                        <GoogleIcon name="remove" size={16} />
-                      </button>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={currentWeight === 0 ? "" : currentWeight}
-                        placeholder="0.0"
-                        onChange={(e) => handleWeightChange(cat.id, e.target.value)}
-                        className="w-14 text-center text-sm font-bold text-[#0b1c30] bg-transparent outline-none"
-                        aria-label={`Berat ${cat.name}`}
-                      />
-                      <span className="text-xs font-semibold text-[#6c7a71] pr-1.5">kg</span>
-                      <button
-                        type="button"
-                        onClick={() => adjustWeight(cat.id, 0.5)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#006c49] text-white shadow-2xs hover:bg-[#2b6954] transition-colors"
-                        aria-label={`Tambah ${cat.name}`}
-                      >
-                        <GoogleIcon name="add" size={16} />
-                      </button>
-                    </div>
-
-                    {/* Subtotal Poin & Rupiah */}
-                    <div className="w-24 text-right">
-                      <div
-                        className={`text-xs font-bold ${
-                          hasWeight ? "text-[#006c49]" : "text-[#6c7a71]"
-                        }`}
-                      >
-                        +{subtotalPoints.toLocaleString("id-ID")} pt
-                      </div>
-                      <div className="text-[10px] text-[#6c7a71]">
-                        ≈ Rp {subtotalRupiah.toLocaleString("id-ID")}
-                      </div>
-                    </div>
+                {/* Counter Input Berat (kg) & Subtotal */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                  <div className="flex items-center rounded-xl border border-[#bbcabf]/40 bg-[#f8f9ff] p-1">
+                    <button
+                      type="button"
+                      onClick={() => adjustWeight(cat.id, -0.5)}
+                      disabled={currentWeight <= 0}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-[#0b1c30] shadow-2xs hover:bg-[#eff4ff] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      aria-label={`Kurangi ${cat.name}`}
+                    >
+                      <GoogleIcon name="remove" size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={currentWeight === 0 ? "" : currentWeight}
+                      placeholder="0.0"
+                      onChange={(e) => handleWeightChange(cat.id, e.target.value)}
+                      className="w-14 text-center text-sm font-bold text-[#0b1c30] bg-transparent outline-none"
+                      aria-label={`Berat ${cat.name}`}
+                    />
+                    <span className="text-xs font-semibold text-[#6c7a71] pr-1.5">kg</span>
+                    <button
+                      type="button"
+                      onClick={() => adjustWeight(cat.id, 0.5)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#006c49] text-white shadow-2xs hover:bg-[#2b6954] transition-colors"
+                      aria-label={`Tambah ${cat.name}`}
+                    >
+                      <GoogleIcon name="add" size={16} />
+                    </button>
                   </div>
 
-                  {/* Quick Preset Buttons */}
-                  <div className="flex items-center gap-1.5 self-end text-[10px]">
-                    <span className="text-[#6c7a71] mr-1">Cepat:</span>
-                    <button
-                      type="button"
-                      onClick={() => adjustWeight(cat.id, 1)}
-                      className="px-1.5 py-0.5 rounded bg-[#eff4ff] text-[#006c49] font-semibold hover:bg-[#006c49] hover:text-white transition-colors"
+                  {/* Subtotal Poin & Rupiah */}
+                  <div className="w-24 text-right shrink-0">
+                    <div
+                      className={`text-xs font-bold ${
+                        hasWeight ? "text-[#006c49]" : "text-[#6c7a71]"
+                      }`}
                     >
-                      +1kg
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => adjustWeight(cat.id, 5)}
-                      className="px-1.5 py-0.5 rounded bg-[#eff4ff] text-[#006c49] font-semibold hover:bg-[#006c49] hover:text-white transition-colors"
-                    >
-                      +5kg
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => adjustWeight(cat.id, 10)}
-                      className="px-1.5 py-0.5 rounded bg-[#eff4ff] text-[#006c49] font-semibold hover:bg-[#006c49] hover:text-white transition-colors"
-                    >
-                      +10kg
-                    </button>
+                      +{subtotalPoints.toLocaleString("id-ID")} pt
+                    </div>
+                    <div className="text-[10px] text-[#6c7a71]">
+                      ≈ Rp {subtotalRupiah.toLocaleString("id-ID")}
+                    </div>
                   </div>
                 </div>
               </div>

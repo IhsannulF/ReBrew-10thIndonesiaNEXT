@@ -23,6 +23,8 @@ export function InsightClientView({ initialData }: InsightClientViewProps) {
     selectedCategory,
     setSelectedCategory,
     isGenerating,
+    generationStep,
+    generationStepIndex,
     refreshSuccess,
     handleRefreshAi,
   } = useAiInsight({ initialData });
@@ -43,12 +45,9 @@ export function InsightClientView({ initialData }: InsightClientViewProps) {
             <span>Analisis Sirkularitas & Rekomendasi AI</span>
             <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#eff4ff] text-[#006c49] border border-[#adedd3] px-3 py-1 rounded-full shadow-2xs">
               <GoogleIcon name="auto_awesome" size={14} />
-              Powered by Google Gemini
+              Powered by Google Gemini 2.5 Pro
             </span>
           </h1>
-          <p className="text-sm text-[#3c4a42] mt-0.5">
-            Analisis diagnostik pola limbah kafe <strong>{initialData.cafeName}</strong>, strategi perolehan koin, dan ringkasan eksekutif sirkular.
-          </p>
         </div>
 
         {/* Action Header Button */}
@@ -87,6 +86,8 @@ export function InsightClientView({ initialData }: InsightClientViewProps) {
         projection={projection}
         diagnostic={diagnostic}
         isGenerating={isGenerating}
+        generationStep={generationStep}
+        generationStepIndex={generationStepIndex}
         onRefreshAi={handleRefreshAi}
       />
 

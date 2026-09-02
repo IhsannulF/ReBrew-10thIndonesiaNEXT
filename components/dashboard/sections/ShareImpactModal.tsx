@@ -20,6 +20,8 @@ export const ShareImpactModal: React.FC<ShareImpactModalProps> = ({
   stats,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+  const [storySuccessMsg, setStorySuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -36,7 +38,229 @@ export const ShareImpactModal: React.FC<ShareImpactModalProps> = ({
   const handleCopyLink = () => {
     navigator.clipboard?.writeText(shareUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  // Helper untuk membuat gambar 9:16 (1080x1920) beresolusi tinggi untuk Instagram Story
+  const generateStoryImageBlob = async (): Promise<Blob> => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1920;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas context not available");
+
+    // 1. Background Gradient (Dark Eco-Luxury Theme)
+    const bgGradient = ctx.createLinearGradient(0, 0, 1080, 1920);
+    bgGradient.addColorStop(0, "#00281b");
+    bgGradient.addColorStop(0.35, "#004e33");
+    bgGradient.addColorStop(0.7, "#006c49");
+    bgGradient.addColorStop(1, "#001b10");
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // Subtle Radial Glows for premium aesthetics
+    const glow1 = ctx.createRadialGradient(850, 300, 50, 850, 300, 600);
+    glow1.addColorStop(0, "rgba(111, 251, 190, 0.18)");
+    glow1.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = glow1;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    const glow2 = ctx.createRadialGradient(200, 1600, 50, 200, 1600, 700);
+    glow2.addColorStop(0, "rgba(0, 108, 73, 0.35)");
+    glow2.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = glow2;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // 2. Top Bar: ReBrew Brand & Verified Badge
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 44px 'Plus Jakarta Sans', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("🌿 ReBrew", 100, 180);
+
+    // Badge Pill
+    const badgeText = "VERIFIED ECO-PARTNER";
+    ctx.font = "bold 24px 'Plus Jakarta Sans', sans-serif";
+    const badgeWidth = ctx.measureText(badgeText).width + 50;
+    const badgeHeight = 50;
+    const badgeX = 1080 - 100 - badgeWidth;
+    const badgeY = 140;
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 25);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(173, 237, 211, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "#6ffbbe";
+    ctx.textAlign = "center";
+    ctx.fillText(badgeText, badgeX + badgeWidth / 2, badgeY + 34);
+
+    // 3. Center Main Card
+    const cardX = 90;
+    const cardY = 320;
+    const cardW = 900;
+    const cardH = 1260;
+
+    // Card background & glass stroke
+    ctx.fillStyle = "rgba(0, 33, 19, 0.65)";
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, 48);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(173, 237, 211, 0.35)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Storefront Icon Box
+    const iconBoxSize = 130;
+    const iconBoxX = cardX + (cardW - iconBoxSize) / 2;
+    const iconBoxY = cardY + 110;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.beginPath();
+    ctx.roundRect(iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, 32);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.font = "64px 'Plus Jakarta Sans', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("☕", iconBoxX + iconBoxSize / 2, iconBoxY + 90);
+
+    // Cafe Name
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 56px 'Plus Jakarta Sans', sans-serif";
+    ctx.textAlign = "center";
+    const cafeTitle = user.cafeName || "Kedai Kopi Mitra";
+    ctx.fillText(cafeTitle, 540, iconBoxY + iconBoxSize + 85);
+
+    // Subtitle
+    ctx.fillStyle = "#adedd3";
+    ctx.font = "500 30px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText("Bulan Ini Berhasil Memilah & Mendaur Ulang:", 540, iconBoxY + iconBoxSize + 145);
+
+    // Metric Stats Container
+    const statY = iconBoxY + iconBoxSize + 220;
+    const statW = 760;
+    const statH = 340;
+    const statX = cardX + (cardW - statW) / 2;
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    ctx.beginPath();
+    ctx.roundRect(statX, statY, statW, statH, 36);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Metric 1: Limbah Terpilah
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.font = "bold 24px 'Plus Jakarta Sans', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("LIMBAH TERPILAH", statX + statW / 4, statY + 90);
+
+    ctx.fillStyle = "#6ffbbe";
+    ctx.font = "900 68px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText(formatWeight(stats.wasteKgThisMonth), statX + statW / 4, statY + 185);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+    ctx.font = "22px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText("Terkonversi Circular", statX + statW / 4, statY + 240);
+
+    // Divider line between stats
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+    ctx.beginPath();
+    ctx.moveTo(statX + statW / 2, statY + 40);
+    ctx.lineTo(statX + statW / 2, statY + statH - 40);
+    ctx.stroke();
+
+    // Metric 2: Reduksi Karbon
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.font = "bold 24px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText("REDUKSI KARBON", statX + (statW * 3) / 4, statY + 90);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 68px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText(`${stats.co2SavedKg.toFixed(1)} kg`, statX + (statW * 3) / 4, statY + 185);
+
+    ctx.fillStyle = "#adedd3";
+    ctx.font = "22px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText("CO₂ Emisi Ditekan", statX + (statW * 3) / 4, statY + 240);
+
+    // Card Footer Quote
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 28px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText("🌱 Dikelola Bersama ReBrew Waste Management", 540, cardY + cardH - 120);
+
+    ctx.fillStyle = "#6ffbbe";
+    ctx.font = "bold 24px monospace";
+    ctx.fillText("#PilahSampahCiptakanDampak", 540, cardY + cardH - 65);
+
+    // 4. Bottom Story CTA Helper
+    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+    ctx.font = "500 26px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillText("🔗 Cek Sertifikat & Audit Dampak Sirkular di Link Sticker", 540, 1780);
+
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Gagal mengekspor gambar story"));
+      }, "image/png");
+    });
+  };
+
+  const handleShareToInstagramStory = async () => {
+    setIsGeneratingStory(true);
+    setStorySuccessMsg(null);
+
+    try {
+      // 1. Generate high-res 9:16 PNG
+      const blob = await generateStoryImageBlob();
+      const file = new File([blob], `ReBrew-Impact-${user.cafeName?.replace(/\s+/g, "_") || "Cafe"}.png`, {
+        type: "image/png",
+      });
+
+      // 2. Cek apakah browser mendukung Web Share API dengan file gambar (iOS / Android Mobile Chrome/Safari)
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
+        // Otomatis salin link sertifikat ke clipboard agar user bisa tempel link sticker di Story
+        await navigator.clipboard?.writeText(shareUrl);
+        await navigator.share({
+          title: `Dampak Hijau ${user.cafeName}`,
+          text: `Aksi pilah & daur ulang sampah ${user.cafeName} bersama ReBrew!`,
+          files: [file],
+        });
+        setStorySuccessMsg("Gambar berhasil dibagikan! Link sertifikat telah disalin ke clipboard.");
+      } else {
+        // Fallback untuk Desktop & Browser yang tidak mendukung native file share:
+        // Download gambar story 9:16 otomatis & salin link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ReBrew-Story-${user.cafeName?.replace(/\s+/g, "_") || "Impact"}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        await navigator.clipboard?.writeText(shareUrl);
+        setStorySuccessMsg(
+          "Gambar Instagram Story (9:16) telah didownload! Link sertifikat otomatis tersalin di clipboard."
+        );
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        console.error("Error sharing to Instagram Story:", err);
+        setStorySuccessMsg("Link profil tersalin. Silakan simpan gambar untuk Story Anda.");
+      }
+    } finally {
+      setIsGeneratingStory(false);
+    }
   };
 
   return (
@@ -60,7 +284,7 @@ export const ShareImpactModal: React.FC<ShareImpactModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-lg text-[#6c7a71] hover:bg-[#eff4ff] hover:text-[#0b1c30]"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-lg text-[#6c7a71] hover:bg-[#eff4ff] hover:text-[#0b1c30] cursor-pointer"
           >
             ×
           </button>
@@ -135,35 +359,47 @@ export const ShareImpactModal: React.FC<ShareImpactModalProps> = ({
             </div>
           </div>
 
-          {/* Action Share Buttons */}
-          <div className="mt-5 flex flex-col gap-2.5">
+          {/* Feedback message banner */}
+          {storySuccessMsg && (
+            <div className="mt-3.5 rounded-xl bg-[#f0fdf4] border border-[#006c49]/30 p-2.5 text-center text-xs font-semibold text-[#006c49] animate-in fade-in duration-200">
+              {storySuccessMsg}
+            </div>
+          )}
+
+          {/* Action Share Area */}
+          <div className="mt-4 flex flex-col gap-3">
+            {/* 1. Salin Link Button On Top */}
             <button
               type="button"
               onClick={handleCopyLink}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#006c49] py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#005236]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#bbcabf]/50 bg-[#f8f9ff] py-2.5 text-xs font-bold text-[#0b1c30] hover:bg-[#eff4ff] hover:text-[#006c49] hover:border-[#006c49]/40 transition-colors shadow-2xs cursor-pointer"
             >
-              <GoogleIcon name="content_copy" size={16} />
-              <span>{copied ? "Link Profil Tersalin! ✔" : "Salin Link Kartu Sertifikat"}</span>
+              <GoogleIcon name="content_copy" size={16} className="text-[#006c49]" />
+              <span>{copied ? "Link Sertifikat Tersalin! ✔" : "Salin Link"}</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            {/* 2. Side-by-Side WhatsApp & Instagram Story Buttons */}
+            <div className="flex items-center gap-2.5">
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(
                   `Kedai ${user.cafeName} telah mendaur ulang ${stats.wasteKgThisMonth} kg limbah plastik bersama ReBrew! Cek sertifikat dan aksi sirkular kami di: ${shareUrl}`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#bbcabf]/50 bg-[#f8f9ff] py-2 text-xs font-semibold text-[#0b1c30] hover:bg-[#eff4ff]"
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#bbcabf]/50 bg-[#f8f9ff] py-2.5 text-xs font-bold text-[#0b1c30] hover:bg-[#eff4ff] hover:text-[#006c49] hover:border-[#006c49]/40 transition-colors shadow-2xs"
               >
+                <GoogleIcon name="chat" size={16} className="text-[#25D366]" />
                 <span>WhatsApp</span>
               </a>
 
               <button
                 type="button"
-                onClick={() => alert("Kartu siap dibagikan ke Instagram Story!")}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#bbcabf]/50 bg-[#f8f9ff] py-2 text-xs font-semibold text-[#0b1c30] hover:bg-[#eff4ff]"
+                onClick={handleShareToInstagramStory}
+                disabled={isGeneratingStory}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#bbcabf]/50 bg-[#f8f9ff] py-2.5 text-xs font-bold text-[#0b1c30] hover:bg-[#eff4ff] hover:text-[#006c49] hover:border-[#006c49]/40 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
               >
-                <span>Instagram Story</span>
+                <GoogleIcon name="photo_camera" size={16} className="text-[#006c49]" />
+                <span>{isGeneratingStory ? "Menyiapkan..." : "Instagram Story"}</span>
               </button>
             </div>
           </div>
@@ -172,3 +408,4 @@ export const ShareImpactModal: React.FC<ShareImpactModalProps> = ({
     </div>
   );
 };
+

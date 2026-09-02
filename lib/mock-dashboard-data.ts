@@ -49,7 +49,7 @@ export const initialDashboardData: DashboardData = {
     {
       id: "RB-781",
       categoryKey: "cup_plastik",
-      material: "Cup Plastik PP",
+      material: "Cup Plastik",
       date: "Hari ini 09:15",
       weightKg: 2.4,
       coins: 12,
@@ -60,7 +60,7 @@ export const initialDashboardData: DashboardData = {
     {
       id: "RB-780",
       categoryKey: "tutup_cup",
-      material: "Tutup Cup & Seal",
+      material: "Tutup Cup",
       date: "Hari ini 09:15",
       weightKg: 1.2,
       coins: 4,
@@ -71,7 +71,7 @@ export const initialDashboardData: DashboardData = {
     {
       id: "RB-779",
       categoryKey: "botol_plastik",
-      material: "Botol Plastik PET",
+      material: "Botol Plastik",
       date: "Kemarin 14:30",
       weightKg: 3.5,
       coins: 35,
@@ -82,7 +82,7 @@ export const initialDashboardData: DashboardData = {
     {
       id: "RB-778",
       categoryKey: "botol_plastik",
-      material: "Botol Sirup & Mineral PET",
+      material: "Botol Sirup & Mineral",
       date: "2 hari lalu",
       weightKg: 4.5,
       coins: 54, // dijemput with 20% discount
@@ -92,7 +92,7 @@ export const initialDashboardData: DashboardData = {
     {
       id: "RB-777",
       categoryKey: "cup_plastik",
-      material: "Plastic Cup (PP/PET)",
+      material: "Plastic Cup",
       date: "3 hari lalu",
       weightKg: 3.2,
       coins: 36,
@@ -103,7 +103,7 @@ export const initialDashboardData: DashboardData = {
     {
       id: "RB-776",
       categoryKey: "tutup_cup",
-      material: "Tutup Cup & Seal",
+      material: "Tutup Cup",
       date: "5 hari lalu",
       weightKg: 1.2,
       coins: 6,

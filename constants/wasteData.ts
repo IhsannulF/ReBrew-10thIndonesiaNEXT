@@ -74,7 +74,7 @@ export function getMinPickupWeight(distanceKm: number): { minWeight: number; tie
 export const WASTE_CATEGORIES: WasteCategory[] = [
   {
     id: "cup-plastik",
-    name: "Plastic Cup (PP/PET)",
+    name: "Plastic Cup",
     category: "Plastik",
     offtakerPricePerKg: 5000,
     pointPerKg: 15, // 15 Poin/kg (Nilai Kas: Rp 525/kg)
@@ -84,7 +84,7 @@ export const WASTE_CATEGORIES: WasteCategory[] = [
   },
   {
     id: "ampas-kopi",
-    name: "Ampas Kopi (Spent Grounds)",
+    name: "Ampas Kopi",
     category: "Organik",
     offtakerPricePerKg: 3000,
     pointPerKg: 10, // 10 Poin/kg (Nilai Kas: Rp 350/kg)
@@ -94,23 +94,13 @@ export const WASTE_CATEGORIES: WasteCategory[] = [
   },
   {
     id: "botol-plastik",
-    name: "Botol Plastik (PET Bening)",
+    name: "Botol Plastik",
     category: "Plastik",
     offtakerPricePerKg: 6000,
     pointPerKg: 5, // 5 Poin/kg (Nilai Kas: Rp 175/kg)
     co2Factor: 1.4,
     icon: "local_drink",
     description: "Botol air mineral, botol sirup bening / transparan",
-  },
-  {
-    id: "tutup-cup",
-    name: "Tutup Cup & Sedotan (HDPE/PP)",
-    category: "Plastik",
-    offtakerPricePerKg: 3000,
-    pointPerKg: 3, // 3 Poin/kg (Nilai Kas: Rp 105/kg)
-    co2Factor: 0.8,
-    icon: "takeout_dining",
-    description: "Lid plastik cembung/flat, seal cup, dan sedotan",
   },
 ];
 

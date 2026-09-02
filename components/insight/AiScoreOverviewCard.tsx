@@ -9,6 +9,8 @@ interface AiScoreOverviewCardProps {
   projection: WasteProjection;
   diagnostic?: AiDiagnosticAnalysis;
   isGenerating?: boolean;
+  generationStep?: string;
+  generationStepIndex?: number;
   onRefreshAi?: () => void;
 }
 
@@ -17,12 +19,69 @@ export const AiScoreOverviewCard: React.FC<AiScoreOverviewCardProps> = ({
   projection,
   diagnostic,
   isGenerating = false,
+  generationStep = "Sedang memproses analitik limbah kafe...",
+  generationStepIndex = 1,
   onRefreshAi,
 }) => {
   const isNewAccount = (projection.currentKg ?? 0) === 0;
 
   return (
     <div className="flex flex-col gap-5 w-full">
+      {/* Live AI Reasoning Stepper Banner when generating */}
+      {isGenerating && (
+        <div className="flex flex-col gap-3 rounded-3xl border border-[#006c49]/40 bg-gradient-to-r from-[#eff4ff] via-[#f0fdf4] to-[#f8fafc] p-5 sm:p-6 shadow-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#006c49] text-white">
+                <GoogleIcon name="auto_awesome" size={20} className="animate-spin" />
+              </div>
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[#006c49] block">
+                  Gemini 2.5 Pro Live Reasoning
+                </span>
+                <span className="text-xs font-bold text-[#0b1c30]">
+                  {generationStep}
+                </span>
+              </div>
+            </div>
+            <span className="text-xs font-mono font-extrabold text-[#006c49] bg-white px-2.5 py-1 rounded-lg border border-[#adedd3] shadow-2xs">
+              Langkah {generationStepIndex} / 4
+            </span>
+          </div>
+
+          {/* Stepper Progress Bar */}
+          <div className="grid grid-cols-4 gap-2 mt-1">
+            {[
+              "1. Log Timbangan",
+              "2. Analisis CO₂",
+              "3. Gemini AI Reasoning",
+              "4. Strategi Monetisasi",
+            ].map((stepLabel, idx) => {
+              const isPastOrCurrent = generationStepIndex >= idx + 1;
+              return (
+                <div key={idx} className="flex flex-col gap-1">
+                  <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        isPastOrCurrent
+                          ? "bg-gradient-to-r from-[#006c49] to-[#10b981]"
+                          : "bg-transparent"
+                      }`}
+                    />
+                  </div>
+                  <span
+                    className={`text-[10px] truncate ${
+                      isPastOrCurrent ? "text-[#006c49] font-bold" : "text-[#6c7a71]"
+                    }`}
+                  >
+                    {stepLabel}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Top Grid: Circularity Score + Monthly Projection */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
         {/* 1. Eco Circularity Score Hero (7 Cols) */}
@@ -187,9 +246,6 @@ export const AiScoreOverviewCard: React.FC<AiScoreOverviewCardProps> = ({
                     Gemini AI Model
                   </span>
                 </div>
-                <p className="text-xs text-[#3c4a42] mt-0.5">
-                  Hasil telaah pola limbah dan potensi monetisasi sirkular kafe Anda
-                </p>
               </div>
             </div>
 
