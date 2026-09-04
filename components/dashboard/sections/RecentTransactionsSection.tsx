@@ -38,19 +38,19 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
 
   return (
     <section
-      className="w-full flex flex-col rounded-2xl border border-[#bbcabf]/40 bg-white p-6 sm:p-7 shadow-xs min-w-0"
+      className="w-full flex flex-col rounded-2xl border border-[#bbcabf]/40 bg-white p-4 sm:p-6 lg:p-7 shadow-xs min-w-0"
       aria-labelledby="recent-transactions-heading"
     >
       {/* Header & Filter Controls */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-[#bbcabf]/20 pb-5 w-full">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shrink-0 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-[#bbcabf]/20 pb-4 sm:pb-5 w-full">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-[#eff4ff] text-[#006c49] shrink-0 shadow-2xs">
             <GoogleIcon name="receipt_long" size={20} />
           </div>
           <div>
             <h2
               id="recent-transactions-heading"
-              className="text-base sm:text-lg font-bold text-[#0b1c30]"
+              className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight"
             >
               Transaksi Daur Ulang
             </h2>
@@ -58,7 +58,7 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
         </div>
 
         {/* Category Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 shrink-0 max-w-full">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
           {filterTabs.map((tab) => {
             const isActive = selectedCategory === tab.key;
             return (
@@ -79,7 +79,7 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
       </div>
 
       {/* Transactions List */}
-      <div className="flex flex-col gap-2 w-full mt-3">
+      <div className="flex flex-col gap-2.5 w-full mt-3.5">
         {displayTransactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center w-full">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff4ff] text-[#6c7a71] mb-2.5">
@@ -108,12 +108,12 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
               <Link
                 key={tx.id}
                 href="/dashboard/riwayat"
-                className="group flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[#bbcabf]/30 bg-white hover:bg-[#f8f9ff] hover:border-[#006c49]/40 hover:shadow-xs transition-all gap-3.5 w-full cursor-pointer"
+                className="group flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[#bbcabf]/30 bg-white hover:bg-[#f8f9ff] hover:border-[#006c49]/40 hover:shadow-xs transition-all gap-3 w-full cursor-pointer"
               >
                 {/* Left: Category Icon & Main Info */}
-                <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
                   <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-105 shadow-2xs mt-0.5 sm:mt-0"
+                    className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-105 shadow-2xs mt-0.5 sm:mt-0"
                     style={{
                       backgroundColor: category.bgColor,
                       color: category.color,
@@ -121,7 +121,7 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
                       borderWidth: "1px",
                     }}
                   >
-                    <GoogleIcon name={category.icon} size={22} />
+                    <GoogleIcon name={category.icon} size={20} />
                   </div>
 
                   <div className="flex flex-col min-w-0 flex-1">
@@ -129,22 +129,22 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
                       <span className="text-sm font-bold text-[#0b1c30] group-hover:text-[#006c49] transition-colors truncate">
                         {cleanMaterial}
                       </span>
-                      <span className="text-[10px] font-mono font-bold text-[#006c49] bg-[#eff4ff] px-2 py-0.5 rounded-md border border-[#adedd3]">
+                      <span className="text-[10px] font-mono font-bold text-[#006c49] bg-[#eff4ff] px-2 py-0.5 rounded-md border border-[#adedd3] shrink-0">
                         {tx.id}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-[#6c7a71] flex-wrap">
-                      <span className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-[#6c7a71] flex-wrap">
+                      <span className="flex items-center gap-1 shrink-0">
                         <GoogleIcon name="calendar_today" size={12} className="text-[#6c7a71]" />
                         <span>{tx.date}</span>
                       </span>
                       <span className="text-[#bbcabf]">•</span>
-                      <span className="font-bold text-[#0b1c30]">
+                      <span className="font-bold text-[#0b1c30] shrink-0">
                         {formatWeight(tx.weightKg)}
                       </span>
                       <span className="text-[#bbcabf]">•</span>
-                      <span className="inline-flex items-center gap-1 text-[11px] text-[#3c4a42] bg-[#f0fdf4] px-2 py-0.5 rounded-md border border-[#adedd3]/60">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#3c4a42] bg-[#f0fdf4] px-2 py-0.5 rounded-md border border-[#adedd3]/60 shrink-0">
                         <GoogleIcon
                           name={tx.method === "drop_point" ? "store" : "local_shipping"}
                           size={13}
@@ -156,9 +156,9 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
                 </div>
 
                 {/* Right / Bottom on Mobile: Status & Coins */}
-                <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-[#bbcabf]/20">
+                <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-[#bbcabf]/20 w-full sm:w-auto">
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-2xs border ${tx.status === "confirmed"
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-2xs border shrink-0 ${tx.status === "confirmed"
                         ? "bg-[#eff4ff] text-[#006c49] border-[#adedd3]"
                         : "bg-[#fff8e1] text-[#92400e] border-[#fde68a]"
                       }`}
@@ -171,7 +171,7 @@ export const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps>
                     <span>{tx.status === "confirmed" ? "Terverifikasi" : "Menunggu"}</span>
                   </span>
 
-                  <span className="text-xs sm:text-sm font-black text-[#d97706] bg-gradient-to-br from-white to-[#fef3c7] px-3 py-1 rounded-xl border border-[#fde68a] shadow-2xs flex items-center gap-1">
+                  <span className="text-xs sm:text-sm font-black text-[#d97706] bg-gradient-to-br from-white to-[#fef3c7] px-2.5 sm:px-3 py-1 rounded-xl border border-[#fde68a] shadow-2xs flex items-center gap-1 shrink-0">
                     <span>+{tx.coins}</span>
                     <GoogleIcon name="monetization_on" size={14} filled className="text-[#d97706]" />
                   </span>
